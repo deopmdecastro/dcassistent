@@ -1,0 +1,24 @@
+# DC V1 — ES3N28P (ESP32-S3, 16MB flash / 8MB PSRAM octal)
+# Ver docs/firmware-architecture.md secção 12 para o racional destes valores.
+
+CONFIG_IDF_TARGET="esp32s3"
+
+# PSRAM octal (8MB) — obrigatório para os frame buffers do LVGL
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+
+# Flash externa 16MB
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# LVGL
+CONFIG_LV_COLOR_DEPTH_16=y
+CONFIG_LV_MEM_CUSTOM=y
+
+# Wi-Fi (usado a partir da fase 0.3)
+CONFIG_ESP_WIFI_STA_DISCONNECTED_PM_ENABLE=y
+
+# Consola/log pelo UART0 (GPIO43/44) — ver app_config.h
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
