@@ -3,7 +3,14 @@ idf_component_register(
         "app_main.c"
         "hal/lcd_hal.c"
         "hal/gpio_hal.c"
+        "hal/touch_hal.c"
         "services/ui_manager.c"
+        "wifi/wifi_manager.c"
+        "storage/storage_manager.c"
+        "storage/settings_manager.c"
+        "audio/audio_manager.c"
+        "audio/audio_output.c"
+        "audio/audio_input.c"
     INCLUDE_DIRS
         "."
     REQUIRES
@@ -11,4 +18,7 @@ idf_component_register(
         esp_lcd
         nvs_flash
         esp_timer
+        esp_wifi
+        esp_netif
+        esp_event
 )

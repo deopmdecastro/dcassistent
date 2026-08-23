@@ -1,16 +1,16 @@
 # Hardware da DC V1 — Lista de Componentes, Pinout e Ligações
 
-> **Placa confirmada**: LCDWIKI **ES3N28P** — módulo 2.8" IPS ESP32-S3, variante **sem** touch capacitivo (a ES3C28P é a irmã com touch; ambas partilham o mesmo pinout físico). Pinout obtido do datasheet oficial LCDWIKI (CR2025-MI6875 / CR2025-MI6872) e cruzado com a BSP de referência da placa. Recomenda-se confirmar por continuidade antes do primeiro boot.
+> **Placa (DC 0.3, atualizado)**: LCDWIKI **ES3C28P** — módulo 2.8" IPS ESP32-S3, variante **com** touch capacitivo (a ES3N28P, usada até à DC 0.2, é a irmã sem touch; ambas partilham o mesmo pinout físico). Pinout obtido do datasheet oficial LCDWIKI (CR2025-MI6875 / CR2025-MI6872) e cruzado com a BSP de referência da placa. Recomenda-se confirmar por continuidade antes do primeiro boot.
 
 ---
 
-## 1. Lista de componentes (montados na ES3N28P)
+## 1. Lista de componentes (montados na ES3C28P)
 
 | Ref | Componente | Qtd | Função | Estado |
 |---|---|---|---|---|
 | U1 | ESP32-S3R8 (8 MB OPI PSRAM) + 16 MB QSPI Flash externa | 1 | MCU principal, Wi-Fi 2.4G + BT 5.0 | confirmado |
 | U2 | LCD IPS 2.8" 240×320, driver ILI9341V, SPI 4 fios | 1 | Ecrã da interface | confirmado |
-| U3 | Controlador de touch FT6336G (I2C) | 0 | **Não montado nesta variante** (só na ES3C28P) | confirmado (ausente) |
+| U3 | Controlador de touch FT6336G (I2C) | 1 | Touch capacitivo — navegação principal a partir da DC 0.3 | confirmado |
 | U4 | Codec de áudio ES8311 (I2C 0x18 + I2S) | 1 | ADC microfone + DAC speaker | confirmado |
 | U5 | Amplificador classe D FM8002E | 1 | Amplificação do speaker (1.5W/8Ω, 2W/4Ω) | confirmado |
 | MIC1 | Microfone MEMS (downward, via codec) | 1 | Captura de voz | confirmado |
@@ -18,13 +18,13 @@
 | U6 | TP4054 | 1 | Carga da bateria (máx. 500 mA) | confirmado |
 | U7 | ME6217C33M5G (LDO 5V→3.3V, x2: áudio + geral) | 2 | Alimentação do sistema | confirmado |
 | BT1 | Bateria LiPo 3.7 V (conector 2P 1.25mm) | 1 | Alimentação portátil | a acrescentar pelo utilizador |
-| SW1 | Botão BOOT (IO0) | 1 | Download mode / navegação da UI (sem touch) | confirmado |
+| SW1 | Botão BOOT (IO0) | 1 | Download mode / navegação secundária (fallback ao touch) | confirmado |
 | SW2 | Botão RESET | 1 | Reset físico | confirmado |
 | LED1 | RGB LED (WS2812B, IC interno) | 1 | Indicador de estado da DC | confirmado |
 | SD1 | Slot MicroSD (SDIO 4 bits) | 1 | Armazenamento (fontes, imagens, áudio) | confirmado |
 | J1 | Conector USB-C | 1 | Alimentação + programação | confirmado |
 
-## 2. Pinout confirmado — ES3N28P
+## 2. Pinout confirmado — ES3C28P
 
 > **Pinos reservados que NÃO são usados em funções de periférico**: GPIO26–GPIO32 (flash/PSRAM internos), GPIO19/GPIO20 (USB-Serial/JTAG nativo).
 
@@ -40,14 +40,14 @@
 | RST | LCD_RST | partilhado com o reset do ESP32-S3 (sem GPIO dedicado) |
 | GPIO45 | LCD_BL | backlight, controlado por PWM |
 
-### I2C partilhado (touch se existisse + codec de áudio)
+### I2C partilhado (touch + codec de áudio)
 
 | Pino MCU | Sinal | Notas |
 |---|---|---|
-| GPIO16 | I2C_SDA | barramento partilhado: codec ES8311 (0x18); touch FT6336G (0x38) só na ES3C28P |
+| GPIO16 | I2C_SDA | barramento partilhado: codec ES8311 (0x18); touch FT6336G (0x38) |
 | GPIO15 | I2C_SCL | idem |
-| GPIO18 | TOUCH_RST | **não usado na ES3N28P** (sem touch) |
-| GPIO17 | TOUCH_INT | **não usado na ES3N28P** (sem touch) |
+| GPIO18 | TOUCH_RST | reset do FT6336G |
+| GPIO17 | TOUCH_INT | interrupt do FT6336G (toque disponível) |
 
 ### Áudio (I2S + amplificador)
 
@@ -75,7 +75,7 @@
 
 | Pino MCU | Sinal | Notas |
 |---|---|---|
-| GPIO0 | BTN_BOOT | download mode no boot; botão de navegação da UI depois de arrancar (sem touch, é o único input físico da V1) |
+| GPIO0 | BTN_BOOT | download mode no boot; input secundário/fallback da UI depois de arrancar (a navegação principal passou a ser por touch na DC 0.3) |
 | GPIO42 | LED_RGB | WS2812B, 1 pino de dados |
 | GPIO9 | BAT_ADC | tensão da bateria via divisor resistivo (÷2) |
 | GPIO2 / GPIO3 / GPIO14 / GPIO21 | EXPANSÃO | 4 IOs livres nos conectores de expansão — **a confirmar** layout de botões físicos extra (ex. vol+/vol−/central) |
@@ -128,8 +128,8 @@ flowchart LR
         USB2[USB-Serial/JTAG]
     end
 
-    subgraph PERIF["Periféricos (ES3N28P)"]
-        LCD[LCD 2.8'' ILI9341 - sem touch]
+    subgraph PERIF["Periféricos (ES3C28P)"]
+        LCD[LCD 2.8'' ILI9341 + touch FT6336G]
         CODEC[Codec Áudio ES8311]
         AMP[Amp FM8002E] --> SPK[Speaker]
         MIC[Mic MEMS] --> CODEC
@@ -145,7 +145,7 @@ flowchart LR
 
 ## 5. Notas e próximos passos
 
-1. ~~Confirmar o hardware real~~ — feito: placa **ES3N28P** (sem touch), pinout confirmado nesta página e em `firmware/main/app_config.h`.
-2. **Decidir o layout de botões externos** (vol+/vol−/central) nos 4 IOs de expansão (GPIO2/3/14/21) — hoje a navegação da UI usa só o botão BOOT.
-3. Se for necessário touch no futuro, trocar para a variante **ES3C28P** (mesmo pinout físico + FT6336G em I2C) — o firmware já isola isto com `DC_BOARD_HAS_TOUCH` em `app_config.h`.
-4. Testar cada periférico individualmente (DC 0.1 — LCD e botão já implementados) antes de avançar para áudio/Wi-Fi (DC 0.3).
+1. ~~Confirmar o hardware real~~ — feito: placa **ES3N28P** (sem touch) na DC 0.1/0.2.
+2. ~~Adicionar touch~~ — feito na DC 0.3: migrou-se para a **ES3C28P** (mesmo pinout físico + FT6336G em I2C), navegação principal por toque, `DC_BOARD_HAS_TOUCH=1` em `app_config.h`. Pendente: confirmar em hardware real (não testado nesta sessão de trabalho, sem toolchain/placa física disponíveis).
+3. **Decidir o layout de botões externos** (vol+/vol−/central) nos 4 IOs de expansão (GPIO2/3/14/21) — hoje o botão BOOT é só fallback do touch.
+4. Testar cada periférico individualmente (LCD, botão, touch, Wi-Fi, áudio) num `idf.py build && idf.py flash monitor` real antes de avançar para a fase 0.4 (voz).

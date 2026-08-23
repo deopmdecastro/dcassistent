@@ -1,0 +1,29 @@
+# DC — Docker Compose
+#
+# Só o dc-gateway corre aqui. O firmware do ESP32-S3 (ES3C28P) NÃO é
+# executável em container — compila-se e grava-se com PlatformIO/ESP-IDF
+# (ver firmware/README.md).
+#
+# Uso:
+#   cp dc-gateway/.env.example dc-gateway/.env   # preencher com valores reais
+#   docker compose up -d --build
+#
+# O serviço fica disponível em http://localhost:4000 (ver PORT no .env).
+
+services:
+  dc-gateway:
+    build:
+      context: ./dc-gateway
+      dockerfile: Dockerfile
+    container_name: dc-gateway
+    restart: unless-stopped
+    env_file:
+      - ./dc-gateway/.env
+    ports:
+      - "${GATEWAY_PORT:-4000}:4000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s

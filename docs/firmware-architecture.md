@@ -127,7 +127,7 @@ Captura (mic):  I2S RX ─► ring buffer ─► (futuro: STT / upload p/ Gatewa
 Reprodução:     (Gateway / ficheiro) ─► ring buffer ─► I2S TX ─► speaker
 ```
 
-**Fluxo de voz (DC 0.3, preparado desde já):**
+**Fluxo de voz (DC 0.4, preparado desde já):**
 
 ```
 Microfone → I2S RX → audio_task → (STT no Gateway) → IA → TTS → audio_task → I2S TX → Speaker

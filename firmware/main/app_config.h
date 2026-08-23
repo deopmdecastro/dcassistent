@@ -2,9 +2,14 @@
  * @file app_config.h
  * @brief Pinout, tamanhos e configuração global da DC V1.
  *
- * Placa: LCDWIKI ES3N28P — 2.8" IPS ESP32-S3 (variante SEM touch capacitivo).
- * Mesmo pinout físico da ES3C28P; a ES3N28P apenas não tem o FT6336G soldado,
- * pelo que os pinos I2C_SDA/I2C_SCL/TOUCH_RST/TOUCH_INT ficam livres/não usados.
+ * Placa: LCDWIKI ES3C28P — 2.8" IPS ESP32-S3 (variante COM touch capacitivo).
+ * Mesmo pinout físico da ES3N28P; a ES3C28P tem o FT6336G soldado no mesmo
+ * barramento I2C que é partilhado com o codec de áudio (ES8311).
+ *
+ * NOTA DE MIGRAÇÃO (DC 0.3): o projeto usava até aqui a ES3N28P (sem touch,
+ * navegação por botão BOOT). Confirmado com o utilizador o upgrade para a
+ * ES3C28P para permitir navegação por toque nas 4 telas principais — ver
+ * docs/hardware.md. O botão BOOT mantém-se como input secundário/recovery.
  *
  * Fonte do pinout: datasheet oficial LCDWIKI (CR2025-MI6875 / CR2025-MI6872)
  * e BSP de referência (ES3C28P/ES3N28P partilham pinout).
@@ -20,8 +25,8 @@
 /* ------------------------------------------------------------------------ */
 /* Identificação da placa                                                   */
 /* ------------------------------------------------------------------------ */
-#define DC_BOARD_NAME           "ES3N28P"
-#define DC_BOARD_HAS_TOUCH      0   /* ES3C28P = 1, ES3N28P = 0 */
+#define DC_BOARD_NAME           "ES3C28P"
+#define DC_BOARD_HAS_TOUCH      1   /* ES3C28P = 1, ES3N28P = 0 */
 #define DC_BOARD_HAS_SD         1
 #define DC_BOARD_HAS_RGB_LED    1   /* WS2812B */
 
@@ -42,8 +47,10 @@
 #define DC_LCD_BL_PWM_FREQ_HZ    5000
 
 /* ------------------------------------------------------------------------ */
-/* Touch — FT6336G, I2C (SÓ existe na ES3C28P; não montado na ES3N28P)      */
-/* Mantido aqui apenas para documentar o barramento partilhado com o codec. */
+/* Touch — FT6336G, I2C (montado na ES3C28P; ausente na ES3N28P)            */
+/* Partilha o barramento I2C com o codec de áudio ES8311 — ambos os drivers */
+/* devem usar o mesmo handle de porto I2C (DC_I2C_PORT), nunca inicializar  */
+/* o barramento duas vezes.                                                 */
 /* ------------------------------------------------------------------------ */
 #define DC_I2C_PIN_SDA           GPIO_NUM_16   /* partilhado: touch (se existir) + codec ES8311 */
 #define DC_I2C_PIN_SCL           GPIO_NUM_15
