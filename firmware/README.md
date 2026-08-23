@@ -14,7 +14,7 @@ O firmware do ESP32-S3 mantém-se **simples**. Ele não precisa saber o que é S
 ## Estado do código
 
 - **DC 0.1 (HAL)**: LCD + backlight + botão + LED — implementado (`main/hal/`).
-- **DC 0.2 (Interface LVGL)**: ecrã Home + menu navegável — implementado (`main/services/ui_manager.c`).
+- **DC 0.2 (Interface LVGL)**: ecrã Home + menu navegável, mais os sub-ecrãs Now Playing, Definições (brilho já ajustável de verdade) e placeholder Agenda/Chamadas — implementado (`main/services/ui_manager.c`).
 - **DC 0.3+ (áudio, Wi-Fi, Gateway, OTA)**: por implementar — estrutura já preparada em `docs/firmware-architecture.md`.
 
 ## Compilar (ESP-IDF ≥ 5.3)

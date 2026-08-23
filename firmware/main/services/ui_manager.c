@@ -42,6 +42,24 @@ static lv_obj_t *s_avatar_circle  = NULL;
 static lv_obj_t *s_lbl_greeting   = NULL;
 static lv_obj_t *s_menu_items[4];
 
+/* Sub-ecrãs (DC 0.2: Now Playing, Definições, e placeholder p/ Agenda/Chamadas) */
+static lv_obj_t *s_scr_now_playing   = NULL;
+static lv_obj_t *s_scr_settings      = NULL;
+static lv_obj_t *s_lbl_brightness    = NULL;
+static lv_obj_t *s_bar_brightness    = NULL;
+static lv_obj_t *s_scr_placeholder   = NULL;
+static lv_obj_t *s_lbl_placeholder_title = NULL;
+
+typedef enum {
+    DC_UI_SCREEN_HOME = 0,
+    DC_UI_SCREEN_NOW_PLAYING,
+    DC_UI_SCREEN_SETTINGS,
+    DC_UI_SCREEN_PLACEHOLDER,
+} dc_ui_screen_t;
+
+static dc_ui_screen_t s_current_screen = DC_UI_SCREEN_HOME;
+static uint8_t s_brightness_pct = 80; /* espelha o valor inicial definido em lcd_hal */
+
 #define DC_MENU_COUNT 4
 static const char *s_menu_labels[DC_MENU_COUNT] = {
     "Musica", "Agenda", "Chamadas", "Definicoes"
@@ -138,6 +156,154 @@ static void dc_ui_build_home_screen(void)
 }
 
 /* ------------------------------------------------------------------------ */
+/* Cabeçalho genérico reutilizado nos sub-ecrãs: título + dica "Voltar"      */
+/* ------------------------------------------------------------------------ */
+static void dc_ui_build_back_header(lv_obj_t *screen, const char *title, lv_obj_t **out_title_lbl)
+{
+    lv_obj_t *lbl_title = lv_label_create(screen);
+    lv_label_set_text(lbl_title, title);
+    lv_obj_set_style_text_color(lbl_title, DC_COLOR_TEXT, 0);
+    lv_obj_align(lbl_title, LV_ALIGN_TOP_MID, 0, 10);
+    if (out_title_lbl) {
+        *out_title_lbl = lbl_title;
+    }
+
+    lv_obj_t *lbl_hint = lv_label_create(screen);
+    lv_label_set_text(lbl_hint, "Toque longo = Voltar");
+    lv_obj_set_style_text_color(lbl_hint, DC_COLOR_TEXT_DIM, 0);
+    lv_obj_set_style_text_font(lbl_hint, &lv_font_montserrat_10, 0);
+    lv_obj_align(lbl_hint, LV_ALIGN_BOTTOM_MID, 0, -8);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Ecrã "Now Playing" — placeholder até a fase 0.5 (Spotify) estar ligada   */
+/* ------------------------------------------------------------------------ */
+static void dc_ui_build_now_playing_screen(void)
+{
+    s_scr_now_playing = lv_obj_create(NULL);
+    lv_obj_set_style_bg_color(s_scr_now_playing, DC_COLOR_BG, 0);
+    lv_obj_clear_flag(s_scr_now_playing, LV_OBJ_FLAG_SCROLLABLE);
+
+    dc_ui_build_back_header(s_scr_now_playing, "Musica", NULL);
+
+    lv_obj_t *cover = lv_obj_create(s_scr_now_playing);
+    lv_obj_set_size(cover, 100, 100);
+    lv_obj_set_style_radius(cover, 10, 0);
+    lv_obj_set_style_bg_color(cover, DC_COLOR_CARD, 0);
+    lv_obj_set_style_border_width(cover, 0, 0);
+    lv_obj_clear_flag(cover, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_align(cover, LV_ALIGN_TOP_MID, 0, 46);
+    lv_obj_t *lbl_note = lv_label_create(cover);
+    lv_label_set_text(lbl_note, LV_SYMBOL_AUDIO);
+    lv_obj_set_style_text_color(lbl_note, DC_COLOR_TEXT_DIM, 0);
+    lv_obj_center(lbl_note);
+
+    lv_obj_t *lbl_track = lv_label_create(s_scr_now_playing);
+    lv_label_set_text(lbl_track, "Sem musica a tocar");
+    lv_obj_set_style_text_color(lbl_track, DC_COLOR_TEXT, 0);
+    lv_obj_align_to(lbl_track, cover, LV_ALIGN_OUT_BOTTOM_MID, 0, 14);
+
+    lv_obj_t *lbl_artist = lv_label_create(s_scr_now_playing);
+    lv_label_set_text(lbl_artist, "Liga o Spotify no Gateway (fase 0.5)");
+    lv_obj_set_style_text_color(lbl_artist, DC_COLOR_TEXT_DIM, 0);
+    lv_obj_align_to(lbl_artist, lbl_track, LV_ALIGN_OUT_BOTTOM_MID, 0, 6);
+
+    lv_obj_t *transport = lv_label_create(s_scr_now_playing);
+    lv_label_set_text(transport, LV_SYMBOL_PREV "   " LV_SYMBOL_PAUSE "   " LV_SYMBOL_NEXT);
+    lv_obj_set_style_text_color(transport, DC_COLOR_TEXT_DIM, 0);
+    lv_obj_align(transport, LV_ALIGN_BOTTOM_MID, 0, -34);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Ecrã "Definições" — brilho já é funcional (backlight PWM real)          */
+/* ------------------------------------------------------------------------ */
+static void dc_ui_build_settings_screen(void)
+{
+    s_scr_settings = lv_obj_create(NULL);
+    lv_obj_set_style_bg_color(s_scr_settings, DC_COLOR_BG, 0);
+    lv_obj_clear_flag(s_scr_settings, LV_OBJ_FLAG_SCROLLABLE);
+
+    dc_ui_build_back_header(s_scr_settings, "Definicoes", NULL);
+
+    s_lbl_brightness = lv_label_create(s_scr_settings);
+    lv_label_set_text_fmt(s_lbl_brightness, "Brilho: %d%% (toque curto = +20%%)", s_brightness_pct);
+    lv_obj_set_style_text_color(s_lbl_brightness, DC_COLOR_TEXT, 0);
+    lv_obj_align(s_lbl_brightness, LV_ALIGN_CENTER, 0, -30);
+
+    s_bar_brightness = lv_bar_create(s_scr_settings);
+    lv_obj_set_size(s_bar_brightness, DC_LCD_H_RES - 60, 14);
+    lv_obj_align(s_bar_brightness, LV_ALIGN_CENTER, 0, 0);
+    lv_bar_set_range(s_bar_brightness, 0, 100);
+    lv_bar_set_value(s_bar_brightness, s_brightness_pct, LV_ANIM_OFF);
+    lv_obj_set_style_bg_color(s_bar_brightness, DC_COLOR_CARD, LV_PART_MAIN);
+    lv_obj_set_style_bg_color(s_bar_brightness, DC_COLOR_ACCENT, LV_PART_INDICATOR);
+
+    lv_obj_t *lbl_more = lv_label_create(s_scr_settings);
+    lv_label_set_text(lbl_more, "Wi-Fi, volume e idioma chegam na fase 0.3/0.4");
+    lv_obj_set_style_text_color(lbl_more, DC_COLOR_TEXT_DIM, 0);
+    lv_obj_set_style_text_font(lbl_more, &lv_font_montserrat_10, 0);
+    lv_obj_align(lbl_more, LV_ALIGN_CENTER, 0, 40);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Ecrã placeholder genérico — reutilizado para Agenda e Chamadas até       */
+/* essas integrações existirem no Gateway (fases 0.6 e 0.7)                 */
+/* ------------------------------------------------------------------------ */
+static void dc_ui_build_placeholder_screen(void)
+{
+    s_scr_placeholder = lv_obj_create(NULL);
+    lv_obj_set_style_bg_color(s_scr_placeholder, DC_COLOR_BG, 0);
+    lv_obj_clear_flag(s_scr_placeholder, LV_OBJ_FLAG_SCROLLABLE);
+
+    dc_ui_build_back_header(s_scr_placeholder, "", &s_lbl_placeholder_title);
+
+    lv_obj_t *lbl_soon = lv_label_create(s_scr_placeholder);
+    lv_label_set_text(lbl_soon, "Em breve");
+    lv_obj_set_style_text_color(lbl_soon, DC_COLOR_TEXT_DIM, 0);
+    lv_obj_center(lbl_soon);
+}
+
+static void dc_ui_show_placeholder(const char *title)
+{
+    lv_label_set_text(s_lbl_placeholder_title, title);
+    s_current_screen = DC_UI_SCREEN_PLACEHOLDER;
+    lv_scr_load(s_scr_placeholder);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Navegação: sai do Home para o ecrã do item selecionado                   */
+/* ------------------------------------------------------------------------ */
+static void dc_ui_open_menu_item(int idx)
+{
+    switch (idx) {
+        case 0: /* Musica */
+            s_current_screen = DC_UI_SCREEN_NOW_PLAYING;
+            lv_scr_load(s_scr_now_playing);
+            break;
+        case 1: /* Agenda */
+            dc_ui_show_placeholder("Agenda");
+            break;
+        case 2: /* Chamadas */
+            dc_ui_show_placeholder("Chamadas");
+            break;
+        case 3: /* Definicoes */
+        default:
+            lv_label_set_text_fmt(s_lbl_brightness, "Brilho: %d%% (toque curto = +20%%)",
+                                   s_brightness_pct);
+            lv_bar_set_value(s_bar_brightness, s_brightness_pct, LV_ANIM_OFF);
+            s_current_screen = DC_UI_SCREEN_SETTINGS;
+            lv_scr_load(s_scr_settings);
+            break;
+    }
+}
+
+static void dc_ui_go_home(void)
+{
+    s_current_screen = DC_UI_SCREEN_HOME;
+    lv_scr_load(s_scr_home);
+}
+
+/* ------------------------------------------------------------------------ */
 /* Notificações de outras tarefas (thread-safe via lvgl_port lock)          */
 /* ------------------------------------------------------------------------ */
 void dc_ui_notify_wifi_connected(bool connected)
@@ -195,13 +361,30 @@ static void dc_ui_task(void *arg)
         dc_btn_event_t ev = dc_gpio_hal_poll_button();
 
         if (ev != DC_BTN_EVENT_NONE && lvgl_port_lock(0)) {
-            if (ev == DC_BTN_EVENT_SHORT_PRESS) {
-                s_menu_focus_idx = (s_menu_focus_idx + 1) % DC_MENU_COUNT;
-                dc_ui_highlight_menu(s_menu_focus_idx);
-            } else if (ev == DC_BTN_EVENT_LONG_PRESS) {
-                ESP_LOGI(TAG, "Item selecionado: %s (acao a implementar na fase 0.4 — Gateway)",
-                         s_menu_labels[s_menu_focus_idx]);
-                dc_gpio_hal_set_led(0, 60, 255); /* feedback visual rápido no LED */
+            if (s_current_screen == DC_UI_SCREEN_HOME) {
+                if (ev == DC_BTN_EVENT_SHORT_PRESS) {
+                    s_menu_focus_idx = (s_menu_focus_idx + 1) % DC_MENU_COUNT;
+                    dc_ui_highlight_menu(s_menu_focus_idx);
+                } else if (ev == DC_BTN_EVENT_LONG_PRESS) {
+                    ESP_LOGI(TAG, "A abrir ecra: %s", s_menu_labels[s_menu_focus_idx]);
+                    dc_gpio_hal_set_led(0, 60, 255); /* feedback visual rápido no LED */
+                    dc_ui_open_menu_item(s_menu_focus_idx);
+                }
+            } else if (s_current_screen == DC_UI_SCREEN_SETTINGS) {
+                if (ev == DC_BTN_EVENT_SHORT_PRESS) {
+                    s_brightness_pct = (s_brightness_pct >= 100) ? 20 : s_brightness_pct + 20;
+                    dc_lcd_hal_set_brightness(s_brightness_pct);
+                    lv_label_set_text_fmt(s_lbl_brightness,
+                                           "Brilho: %d%% (toque curto = +20%%)", s_brightness_pct);
+                    lv_bar_set_value(s_bar_brightness, s_brightness_pct, LV_ANIM_ON);
+                } else if (ev == DC_BTN_EVENT_LONG_PRESS) {
+                    dc_ui_go_home();
+                }
+            } else {
+                /* Now Playing / placeholders: só "voltar" está disponível por agora */
+                if (ev == DC_BTN_EVENT_LONG_PRESS) {
+                    dc_ui_go_home();
+                }
             }
             lvgl_port_unlock();
         }
@@ -248,6 +431,10 @@ esp_err_t dc_ui_manager_start(void)
 
     if (lvgl_port_lock(0)) {
         dc_ui_build_home_screen();
+        dc_ui_build_now_playing_screen();
+        dc_ui_build_settings_screen();
+        dc_ui_build_placeholder_screen();
+        lv_scr_load(s_scr_home); /* garante que arrancamos no Home */
         lvgl_port_unlock();
     }
 
