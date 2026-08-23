@@ -1,0 +1,18 @@
+# --- Firmware (ESP-IDF) ---
+firmware/build/
+firmware/sdkconfig
+firmware/sdkconfig.old
+firmware/managed_components/
+firmware/dependencies.lock
+
+# --- DC Gateway (Node/TypeScript) ---
+dc-gateway/node_modules/
+dc-gateway/dist/
+dc-gateway/.env
+dc-gateway/.env.local
+dc-gateway/coverage/
+dc-gateway/*.log
+
+# --- Genérico ---
+.DS_Store
+*.log

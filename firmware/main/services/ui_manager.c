@@ -1,15 +1,19 @@
 /**
  * @file ui_manager.c
  * @brief Interface LVGL da DC — ecrã Home com relógio/wifi/bateria, avatar
- * central e menu (Música/Agenda/Chamadas/Definições), navegável pelo botão
- * BOOT (a ES3N28P não tem touch — ver hal/gpio_hal.h).
+ * central e menu (Música/Agenda/Chamadas/Definições). DC 0.3: navegação
+ * principal por toque (ES3C28P, hal/touch_hal.h), com o botão BOOT mantido
+ * como input secundário/recovery (ver hal/gpio_hal.h) — útil se o touch
+ * falhar na inicialização.
  *
- * DC 0.2 do roadmap: interface navegável, sem ainda estar ligada ao Gateway.
+ * DC 0.2/0.3: interface navegável, sem ainda estar ligada ao Gateway.
  */
 #include "ui_manager.h"
 #include "app_config.h"
 #include "hal/lcd_hal.h"
 #include "hal/gpio_hal.h"
+#include "hal/touch_hal.h"
+#include "storage/settings_manager.h"
 
 #include "esp_lvgl_port.h"
 #include "esp_lcd_panel_ops.h"
@@ -27,6 +31,7 @@ static const char *TAG = "dc_ui_manager";
 /* ------------------------------------------------------------------------ */
 #define DC_COLOR_BG        lv_color_hex(0x0B0F14)
 #define DC_COLOR_CARD      lv_color_hex(0x161C24)
+#define DC_COLOR_CARD_ACTIVE lv_color_hex(0x232B36) /* feedback de "pressed" em toque */
 #define DC_COLOR_ACCENT    lv_color_hex(0x36D6C0)  /* teal/verde — cor de marca do Manuel */
 #define DC_COLOR_TEXT      lv_color_hex(0xE8EEF3)
 #define DC_COLOR_TEXT_DIM  lv_color_hex(0x7C8A99)
@@ -79,6 +84,11 @@ static lv_obj_t *dc_ui_build_menu_item(lv_obj_t *parent, const char *label)
     lv_obj_set_style_radius(card, 12, 0);
     lv_obj_set_style_pad_all(card, 4, 0);
     lv_obj_clear_flag(card, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_add_flag(card, LV_OBJ_FLAG_CLICKABLE);
+    /* Feedback visual de toque (DC 0.3 / ES3C28P) — o índice real é ligado
+     * ao evento logo a seguir, em dc_ui_build_home_screen, quando já
+     * conhecemos a posição i no array s_menu_items. */
+    lv_obj_set_style_bg_color(card, DC_COLOR_CARD_ACTIVE, LV_STATE_PRESSED);
 
     lv_obj_t *lbl = lv_label_create(card);
     lv_label_set_text(lbl, label);
@@ -86,6 +96,49 @@ static lv_obj_t *dc_ui_build_menu_item(lv_obj_t *parent, const char *label)
     lv_obj_center(lbl);
 
     return card;
+}
+
+static void dc_ui_open_menu_item(int idx);
+static void dc_ui_go_home(void);
+
+/**
+ * @brief Callback de toque num card do menu Home. DC 0.3: com touch (ES3C28P)
+ * um único tap já abre o item — o utilizador não precisa do gesto de dois
+ * passos (curto=foco / longo=selecionar) que existia só para o botão BOOT.
+ */
+static void dc_ui_menu_item_click_cb(lv_event_t *e)
+{
+    int idx = (int)(intptr_t)lv_event_get_user_data(e);
+    s_menu_focus_idx = idx;
+    dc_ui_highlight_menu(idx);
+    dc_ui_open_menu_item(idx);
+}
+
+/** @brief Callback de toque no botão "Voltar" visível nos sub-ecrãs. */
+static void dc_ui_back_button_click_cb(lv_event_t *e)
+{
+    (void)e;
+    dc_ui_go_home();
+}
+
+/**
+ * @brief Incrementa o brilho em 20% (com wrap 100%->20%) e reflete no LCD
+ * e nos widgets do ecrã Definições. Partilhado entre o botão BOOT (short
+ * press) e o tap direto na barra (touch, DC 0.3).
+ */
+static void dc_ui_increment_brightness(void)
+{
+    s_brightness_pct = (s_brightness_pct >= 100) ? 20 : s_brightness_pct + 20;
+    dc_lcd_hal_set_brightness(s_brightness_pct);
+    dc_settings_set_brightness(s_brightness_pct);
+    lv_label_set_text_fmt(s_lbl_brightness, "Brilho: %d%% (toca para +20%%)", s_brightness_pct);
+    lv_bar_set_value(s_bar_brightness, s_brightness_pct, LV_ANIM_ON);
+}
+
+static void dc_ui_brightness_bar_click_cb(lv_event_t *e)
+{
+    (void)e;
+    dc_ui_increment_brightness();
 }
 
 static void dc_ui_highlight_menu(int idx)
@@ -149,6 +202,8 @@ static void dc_ui_build_home_screen(void)
 
     for (int i = 0; i < DC_MENU_COUNT; i++) {
         s_menu_items[i] = dc_ui_build_menu_item(grid, s_menu_labels[i]);
+        lv_obj_add_event_cb(s_menu_items[i], dc_ui_menu_item_click_cb, LV_EVENT_CLICKED,
+                             (void *)(intptr_t)i);
     }
     dc_ui_highlight_menu(s_menu_focus_idx);
 
@@ -160,6 +215,20 @@ static void dc_ui_build_home_screen(void)
 /* ------------------------------------------------------------------------ */
 static void dc_ui_build_back_header(lv_obj_t *screen, const char *title, lv_obj_t **out_title_lbl)
 {
+    /* Botão de voltar tocável (DC 0.3/ES3C28P). O botão BOOT com toque longo
+     * continua a funcionar como atalho físico, mas deixa de ser a única via. */
+    lv_obj_t *btn_back = lv_button_create(screen);
+    lv_obj_set_size(btn_back, 36, 28);
+    lv_obj_align(btn_back, LV_ALIGN_TOP_LEFT, 6, 6);
+    lv_obj_set_style_bg_color(btn_back, DC_COLOR_CARD, 0);
+    lv_obj_set_style_bg_color(btn_back, DC_COLOR_CARD_ACTIVE, LV_STATE_PRESSED);
+    lv_obj_set_style_border_width(btn_back, 0, 0);
+    lv_obj_add_event_cb(btn_back, dc_ui_back_button_click_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *lbl_back_icon = lv_label_create(btn_back);
+    lv_label_set_text(lbl_back_icon, LV_SYMBOL_LEFT);
+    lv_obj_set_style_text_color(lbl_back_icon, DC_COLOR_TEXT, 0);
+    lv_obj_center(lbl_back_icon);
+
     lv_obj_t *lbl_title = lv_label_create(screen);
     lv_label_set_text(lbl_title, title);
     lv_obj_set_style_text_color(lbl_title, DC_COLOR_TEXT, 0);
@@ -169,7 +238,7 @@ static void dc_ui_build_back_header(lv_obj_t *screen, const char *title, lv_obj_
     }
 
     lv_obj_t *lbl_hint = lv_label_create(screen);
-    lv_label_set_text(lbl_hint, "Toque longo = Voltar");
+    lv_label_set_text(lbl_hint, "Toque em " LV_SYMBOL_LEFT " ou toque longo no BOOT para voltar");
     lv_obj_set_style_text_color(lbl_hint, DC_COLOR_TEXT_DIM, 0);
     lv_obj_set_style_text_font(lbl_hint, &lv_font_montserrat_10, 0);
     lv_obj_align(lbl_hint, LV_ALIGN_BOTTOM_MID, 0, -8);
@@ -226,7 +295,7 @@ static void dc_ui_build_settings_screen(void)
     dc_ui_build_back_header(s_scr_settings, "Definicoes", NULL);
 
     s_lbl_brightness = lv_label_create(s_scr_settings);
-    lv_label_set_text_fmt(s_lbl_brightness, "Brilho: %d%% (toque curto = +20%%)", s_brightness_pct);
+    lv_label_set_text_fmt(s_lbl_brightness, "Brilho: %d%% (toca para +20%%)", s_brightness_pct);
     lv_obj_set_style_text_color(s_lbl_brightness, DC_COLOR_TEXT, 0);
     lv_obj_align(s_lbl_brightness, LV_ALIGN_CENTER, 0, -30);
 
@@ -237,6 +306,8 @@ static void dc_ui_build_settings_screen(void)
     lv_bar_set_value(s_bar_brightness, s_brightness_pct, LV_ANIM_OFF);
     lv_obj_set_style_bg_color(s_bar_brightness, DC_COLOR_CARD, LV_PART_MAIN);
     lv_obj_set_style_bg_color(s_bar_brightness, DC_COLOR_ACCENT, LV_PART_INDICATOR);
+    lv_obj_add_flag(s_bar_brightness, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(s_bar_brightness, dc_ui_brightness_bar_click_cb, LV_EVENT_CLICKED, NULL);
 
     lv_obj_t *lbl_more = lv_label_create(s_scr_settings);
     lv_label_set_text(lbl_more, "Wi-Fi, volume e idioma chegam na fase 0.3/0.4");
@@ -288,7 +359,7 @@ static void dc_ui_open_menu_item(int idx)
             break;
         case 3: /* Definicoes */
         default:
-            lv_label_set_text_fmt(s_lbl_brightness, "Brilho: %d%% (toque curto = +20%%)",
+            lv_label_set_text_fmt(s_lbl_brightness, "Brilho: %d%% (toca para +20%%)",
                                    s_brightness_pct);
             lv_bar_set_value(s_bar_brightness, s_brightness_pct, LV_ANIM_OFF);
             s_current_screen = DC_UI_SCREEN_SETTINGS;
@@ -372,11 +443,7 @@ static void dc_ui_task(void *arg)
                 }
             } else if (s_current_screen == DC_UI_SCREEN_SETTINGS) {
                 if (ev == DC_BTN_EVENT_SHORT_PRESS) {
-                    s_brightness_pct = (s_brightness_pct >= 100) ? 20 : s_brightness_pct + 20;
-                    dc_lcd_hal_set_brightness(s_brightness_pct);
-                    lv_label_set_text_fmt(s_lbl_brightness,
-                                           "Brilho: %d%% (toque curto = +20%%)", s_brightness_pct);
-                    lv_bar_set_value(s_bar_brightness, s_brightness_pct, LV_ANIM_ON);
+                    dc_ui_increment_brightness();
                 } else if (ev == DC_BTN_EVENT_LONG_PRESS) {
                     dc_ui_go_home();
                 }
@@ -429,6 +496,28 @@ esp_err_t dc_ui_manager_start(void)
         return ESP_FAIL;
     }
 
+#if DC_BOARD_HAS_TOUCH
+    esp_lcd_touch_handle_t touch_handle = NULL;
+    esp_err_t touch_err = dc_touch_hal_init(&touch_handle);
+    if (touch_err == ESP_OK) {
+        const lvgl_port_touch_cfg_t touch_cfg = {
+            .disp = disp,
+            .handle = touch_handle,
+        };
+        if (!lvgl_port_add_touch(&touch_cfg)) {
+            ESP_LOGW(TAG, "lvgl_port_add_touch falhou — a UI continua utilizável pelo botão BOOT");
+        }
+    } else {
+        ESP_LOGW(TAG, "Touch indisponível (%s) — a UI cai para navegação só por botão BOOT",
+                 esp_err_to_name(touch_err));
+    }
+#else
+    ESP_LOGI(TAG, "Build sem touch (DC_BOARD_HAS_TOUCH=0) — navegação só por botão BOOT");
+#endif
+
+    s_brightness_pct = dc_settings_get_brightness();
+    dc_lcd_hal_set_brightness(s_brightness_pct);
+
     if (lvgl_port_lock(0)) {
         dc_ui_build_home_screen();
         dc_ui_build_now_playing_screen();
@@ -442,6 +531,7 @@ esp_err_t dc_ui_manager_start(void)
                              DC_TASK_UI_STACK_SIZE, NULL,
                              DC_TASK_UI_PRIORITY, NULL, DC_TASK_UI_CORE);
 
-    ESP_LOGI(TAG, "UI Manager pronto — ecrã Home carregado, navegacao pelo botao BOOT");
+    ESP_LOGI(TAG, "UI Manager pronto — ecrã Home carregado (touch=%d, botao BOOT sempre disponivel)",
+             dc_touch_hal_is_ready());
     return ESP_OK;
 }
