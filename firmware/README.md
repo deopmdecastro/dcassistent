@@ -16,6 +16,9 @@ O firmware do ESP32-S3 mantém-se **simples**. Ele não precisa saber o que é S
 - **DC 0.1 (HAL)**: LCD + backlight + botão + LED — implementado (`main/hal/`).
 - **DC 0.2 (Interface LVGL)**: ecrã Home + menu, mais Now Playing/Definições/placeholders — implementado (`main/services/ui_manager.c`).
 - **DC 0.3 (Wi-Fi + NVS + Áudio + Touch)**:
+  - Ecrã Home ampliado para 6 atalhos: Música, Agenda, Chamadas, **Voz** e **Apps** (novos) e Definições.
+  - Ecrã de Voz: botão de microfone tocável com feedback sonoro real; mostra honestamente que a captura (STT) ainda não está ligada, em vez de simular uma conversa.
+  - Ecrã de Apps: launcher em grelha com 8 ícones (Música, Agenda, Gestor, E-mail, Notas, Clima, Relatórios, Config.) — Música e Config. abrem os ecrãs reais existentes, os restantes mostram "Em breve".
   - Touch FT6336G ligado ao LVGL (`main/hal/touch_hal.c`, escrito mas **não testado em hardware/toolchain** nesta sessão de trabalho — reveja com `idf.py build` antes do primeiro flash).
   - Armazenamento persistente modular (`main/storage/storage_manager.c` sobre NVS + `main/storage/settings_manager.c` tipado: Wi-Fi, brilho, volume, tema, favoritos).
   - Wi-Fi não bloqueante com reconexão controlada (`main/wifi/wifi_manager.c`): liga automaticamente à última rede guardada, expõe estados (Desligado/A ligar/Ligado/Sem rede/Erro) à UI.

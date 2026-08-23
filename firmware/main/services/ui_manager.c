@@ -14,6 +14,7 @@
 #include "hal/gpio_hal.h"
 #include "hal/touch_hal.h"
 #include "storage/settings_manager.h"
+#include "audio/audio_manager.h"
 
 #include "esp_lvgl_port.h"
 #include "esp_lcd_panel_ops.h"
@@ -45,7 +46,7 @@ static lv_obj_t *s_lbl_wifi_icon  = NULL;
 static lv_obj_t *s_lbl_battery    = NULL;
 static lv_obj_t *s_avatar_circle  = NULL;
 static lv_obj_t *s_lbl_greeting   = NULL;
-static lv_obj_t *s_menu_items[4];
+static lv_obj_t *s_menu_items[6];
 
 /* Sub-ecrãs (DC 0.2: Now Playing, Definições, e placeholder p/ Agenda/Chamadas) */
 static lv_obj_t *s_scr_now_playing   = NULL;
@@ -55,19 +56,27 @@ static lv_obj_t *s_bar_brightness    = NULL;
 static lv_obj_t *s_scr_placeholder   = NULL;
 static lv_obj_t *s_lbl_placeholder_title = NULL;
 
+/* Sub-ecrãs (DC 0.3: Voz e Apps) */
+static lv_obj_t *s_scr_voice        = NULL;
+static lv_obj_t *s_lbl_voice_status = NULL;
+static lv_obj_t *s_btn_voice_mic    = NULL;
+static lv_obj_t *s_scr_apps         = NULL;
+
 typedef enum {
     DC_UI_SCREEN_HOME = 0,
     DC_UI_SCREEN_NOW_PLAYING,
     DC_UI_SCREEN_SETTINGS,
+    DC_UI_SCREEN_VOICE,
+    DC_UI_SCREEN_APPS,
     DC_UI_SCREEN_PLACEHOLDER,
 } dc_ui_screen_t;
 
 static dc_ui_screen_t s_current_screen = DC_UI_SCREEN_HOME;
 static uint8_t s_brightness_pct = 80; /* espelha o valor inicial definido em lcd_hal */
 
-#define DC_MENU_COUNT 4
+#define DC_MENU_COUNT 6
 static const char *s_menu_labels[DC_MENU_COUNT] = {
-    "Musica", "Agenda", "Chamadas", "Definicoes"
+    "Musica", "Agenda", "Chamadas", "Voz", "Apps", "Definicoes"
 };
 static int s_menu_focus_idx = 0;
 
@@ -77,7 +86,7 @@ static int s_menu_focus_idx = 0;
 static lv_obj_t *dc_ui_build_menu_item(lv_obj_t *parent, const char *label)
 {
     lv_obj_t *card = lv_obj_create(parent);
-    lv_obj_set_size(card, 100, 60);
+    lv_obj_set_size(card, 68, 56);
     lv_obj_set_style_bg_color(card, DC_COLOR_CARD, 0);
     lv_obj_set_style_border_width(card, 2, 0);
     lv_obj_set_style_border_color(card, DC_COLOR_CARD, 0);
@@ -100,6 +109,7 @@ static lv_obj_t *dc_ui_build_menu_item(lv_obj_t *parent, const char *label)
 
 static void dc_ui_open_menu_item(int idx);
 static void dc_ui_go_home(void);
+static void dc_ui_show_placeholder(const char *title);
 
 /**
  * @brief Callback de toque num card do menu Home. DC 0.3: com touch (ES3C28P)
@@ -317,6 +327,131 @@ static void dc_ui_build_settings_screen(void)
 }
 
 /* ------------------------------------------------------------------------ */
+/* Ecrã de Voz — estados visuais (Pronto/A ouvir/A processar/A responder/    */
+/* Erro), botão de microfone grande, tocável. DC 0.3: só a UI e o feedback   */
+/* sonoro estão ligados; NÃO existe wake-word/STT real ainda (audio_input   */
+/* devolve ESP_ERR_NOT_SUPPORTED de propósito — ver audio/audio_input.c).   */
+/* Por isso o botão dá feedback sonoro real mas mostra um aviso honesto em  */
+/* vez de simular uma conversa.                                             */
+/* ------------------------------------------------------------------------ */
+static void dc_ui_voice_mic_click_cb(lv_event_t *e)
+{
+    (void)e;
+    dc_audio_manager_play_feedback(DC_AUDIO_FEEDBACK_TAP);
+    lv_label_set_text(s_lbl_voice_status,
+                       "Captura de voz ainda nao ligada\n(pendente para a fase 0.4)");
+}
+
+static void dc_ui_build_voice_screen(void)
+{
+    s_scr_voice = lv_obj_create(NULL);
+    lv_obj_set_style_bg_color(s_scr_voice, DC_COLOR_BG, 0);
+    lv_obj_clear_flag(s_scr_voice, LV_OBJ_FLAG_SCROLLABLE);
+
+    dc_ui_build_back_header(s_scr_voice, "Assistente de Voz", NULL);
+
+    /* Anel/onda simples em torno do botão — leve, sem animação pesada
+     * (ES3S3 tem RAM limitada, ver secção 3.3/9 do briefing). */
+    lv_obj_t *ring = lv_obj_create(s_scr_voice);
+    lv_obj_set_size(ring, 140, 140);
+    lv_obj_set_style_radius(ring, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_opa(ring, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(ring, 2, 0);
+    lv_obj_set_style_border_color(ring, DC_COLOR_ACCENT, 0);
+    lv_obj_set_style_border_opa(ring, LV_OPA_40, 0);
+    lv_obj_clear_flag(ring, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_align(ring, LV_ALIGN_CENTER, 0, -10);
+
+    s_btn_voice_mic = lv_button_create(s_scr_voice);
+    lv_obj_set_size(s_btn_voice_mic, 84, 84);
+    lv_obj_set_style_radius(s_btn_voice_mic, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(s_btn_voice_mic, DC_COLOR_ACCENT, 0);
+    lv_obj_set_style_bg_color(s_btn_voice_mic, DC_COLOR_CARD_ACTIVE, LV_STATE_PRESSED);
+    lv_obj_align(s_btn_voice_mic, LV_ALIGN_CENTER, 0, -10);
+    lv_obj_add_event_cb(s_btn_voice_mic, dc_ui_voice_mic_click_cb, LV_EVENT_CLICKED, NULL);
+
+    lv_obj_t *lbl_mic_icon = lv_label_create(s_btn_voice_mic);
+    lv_label_set_text(lbl_mic_icon, LV_SYMBOL_AUDIO);
+    lv_obj_center(lbl_mic_icon);
+
+    s_lbl_voice_status = lv_label_create(s_scr_voice);
+    lv_label_set_text(s_lbl_voice_status, "Pronto para ouvir");
+    lv_obj_set_style_text_color(s_lbl_voice_status, DC_COLOR_TEXT, 0);
+    lv_obj_set_style_text_align(s_lbl_voice_status, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_width(s_lbl_voice_status, DC_LCD_H_RES - 40);
+    lv_obj_align(s_lbl_voice_status, LV_ALIGN_BOTTOM_MID, 0, -28);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Ecrã de Apps — launcher em grelha, DC 0.3. Cada ícone abre o ecrã real   */
+/* quando já existe (Musica -> Now Playing, Definicoes -> Settings); os     */
+/* restantes mostram "Em breve" honestamente em vez de simular a app.       */
+/* ------------------------------------------------------------------------ */
+#define DC_APPS_COUNT 8
+static const char *s_app_labels[DC_APPS_COUNT] = {
+    "Musica", "Agenda", "Gestor", "E-mail", "Notas", "Clima", "Relatorios", "Config."
+};
+
+static void dc_ui_app_icon_click_cb(lv_event_t *e)
+{
+    int idx = (int)(intptr_t)lv_event_get_user_data(e);
+    switch (idx) {
+        case 0: /* Musica */
+            s_current_screen = DC_UI_SCREEN_NOW_PLAYING;
+            lv_scr_load(s_scr_now_playing);
+            break;
+        case 7: /* Config. */
+            lv_label_set_text_fmt(s_lbl_brightness, "Brilho: %d%% (toca para +20%%)",
+                                   s_brightness_pct);
+            lv_bar_set_value(s_bar_brightness, s_brightness_pct, LV_ANIM_OFF);
+            s_current_screen = DC_UI_SCREEN_SETTINGS;
+            lv_scr_load(s_scr_settings);
+            break;
+        default:
+            dc_ui_show_placeholder(s_app_labels[idx]);
+            break;
+    }
+}
+
+static void dc_ui_build_apps_screen(void)
+{
+    s_scr_apps = lv_obj_create(NULL);
+    lv_obj_set_style_bg_color(s_scr_apps, DC_COLOR_BG, 0);
+    lv_obj_clear_flag(s_scr_apps, LV_OBJ_FLAG_SCROLLABLE);
+
+    dc_ui_build_back_header(s_scr_apps, "Apps", NULL);
+
+    lv_obj_t *grid = lv_obj_create(s_scr_apps);
+    lv_obj_remove_style_all(grid);
+    lv_obj_set_size(grid, DC_LCD_H_RES - 20, 220);
+    lv_obj_align(grid, LV_ALIGN_CENTER, 0, 6);
+    lv_obj_set_flex_flow(grid, LV_FLEX_FLOW_ROW_WRAP);
+    lv_obj_set_flex_align(grid, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_SPACE_EVENLY,
+                           LV_FLEX_ALIGN_CENTER);
+    lv_obj_clear_flag(grid, LV_OBJ_FLAG_SCROLLABLE);
+
+    for (int i = 0; i < DC_APPS_COUNT; i++) {
+        lv_obj_t *icon = lv_obj_create(grid);
+        lv_obj_set_size(icon, 62, 62);
+        lv_obj_set_style_radius(icon, 14, 0);
+        lv_obj_set_style_bg_color(icon, DC_COLOR_CARD, 0);
+        lv_obj_set_style_bg_color(icon, DC_COLOR_CARD_ACTIVE, LV_STATE_PRESSED);
+        lv_obj_set_style_border_width(icon, 0, 0);
+        lv_obj_clear_flag(icon, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_add_flag(icon, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_add_event_cb(icon, dc_ui_app_icon_click_cb, LV_EVENT_CLICKED, (void *)(intptr_t)i);
+
+        lv_obj_t *lbl = lv_label_create(icon);
+        lv_label_set_text(lbl, s_app_labels[i]);
+        lv_obj_set_style_text_color(lbl, DC_COLOR_TEXT, 0);
+        lv_obj_set_style_text_font(lbl, &lv_font_montserrat_10, 0);
+        lv_obj_set_style_text_align(lbl, LV_TEXT_ALIGN_CENTER, 0);
+        lv_obj_set_width(lbl, 58);
+        lv_obj_center(lbl);
+    }
+}
+
+/* ------------------------------------------------------------------------ */
 /* Ecrã placeholder genérico — reutilizado para Agenda e Chamadas até       */
 /* essas integrações existirem no Gateway (fases 0.6 e 0.7)                 */
 /* ------------------------------------------------------------------------ */
@@ -357,7 +492,16 @@ static void dc_ui_open_menu_item(int idx)
         case 2: /* Chamadas */
             dc_ui_show_placeholder("Chamadas");
             break;
-        case 3: /* Definicoes */
+        case 3: /* Voz */
+            lv_label_set_text(s_lbl_voice_status, "Pronto para ouvir");
+            s_current_screen = DC_UI_SCREEN_VOICE;
+            lv_scr_load(s_scr_voice);
+            break;
+        case 4: /* Apps */
+            s_current_screen = DC_UI_SCREEN_APPS;
+            lv_scr_load(s_scr_apps);
+            break;
+        case 5: /* Definicoes */
         default:
             lv_label_set_text_fmt(s_lbl_brightness, "Brilho: %d%% (toca para +20%%)",
                                    s_brightness_pct);
@@ -522,6 +666,8 @@ esp_err_t dc_ui_manager_start(void)
         dc_ui_build_home_screen();
         dc_ui_build_now_playing_screen();
         dc_ui_build_settings_screen();
+        dc_ui_build_voice_screen();
+        dc_ui_build_apps_screen();
         dc_ui_build_placeholder_screen();
         lv_scr_load(s_scr_home); /* garante que arrancamos no Home */
         lvgl_port_unlock();
