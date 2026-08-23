@@ -1,0 +1,14 @@
+idf_component_register(
+    SRCS
+        "app_main.c"
+        "hal/lcd_hal.c"
+        "hal/gpio_hal.c"
+        "services/ui_manager.c"
+    INCLUDE_DIRS
+        "."
+    REQUIRES
+        driver
+        esp_lcd
+        nvs_flash
+        esp_timer
+)

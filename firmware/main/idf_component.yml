@@ -1,0 +1,8 @@
+dependencies:
+  idf: ">=5.3"
+  lvgl/lvgl: "^9.2"
+  espressif/esp_lvgl_port: "^2.9"
+  espressif/esp_lcd_ili9341: "^2.0.1"
+  espressif/led_strip: "^3.0"
+  # esp_codec_dev entra na fase 0.3 (subsistema de áudio):
+  # espressif/esp_codec_dev: "^1.6"
