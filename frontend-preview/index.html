@@ -749,6 +749,155 @@
     @keyframes splashFade { to { opacity: 1; } }
 
     .hidden { display: none !important; }
+
+    /* ==============================================================
+       WALLPAPER (Papel de parede) — controlado por data-wallpaper
+    ============================================================== */
+    /* Ocultar aurora quando o utilizador escolhe outro papel */
+    .device[data-wallpaper="solid"]::before,
+    .device[data-wallpaper="solid"]::after,
+    .device[data-wallpaper="image"]::before,
+    .device[data-wallpaper="image"]::after { display: none; }
+
+    .wallpaper-image {
+      position: absolute; inset: 0; z-index: 0; pointer-events: none;
+      background-size: cover; background-position: center; background-repeat: no-repeat;
+    }
+    .wallpaper-solid {
+      position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    }
+
+    /* Wallpaper picker (grelha de opcoes) */
+    .wp-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 10px; margin-top: 8px;
+    }
+    .wp-swatch {
+      aspect-ratio: 1.4/1; border-radius: 12px;
+      border: 2px solid var(--stroke); cursor: pointer;
+      position: relative; overflow: hidden;
+      transition: transform var(--dur) var(--ease), border-color var(--dur) var(--ease);
+    }
+    .wp-swatch:hover { transform: translateY(-2px); border-color: var(--stroke-strong); }
+    .wp-swatch.selected { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(167,139,250,0.35); }
+    .wp-swatch .wp-label {
+      position: absolute; left: 6px; bottom: 4px; font-size: 9px;
+      color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+    }
+    .wp-aurora {
+      background:
+        radial-gradient(closest-side at 20% 20%, rgba(124, 58, 237, 0.9), transparent 60%),
+        radial-gradient(closest-side at 80% 30%, rgba(34, 211, 238, 0.6), transparent 65%),
+        radial-gradient(closest-side at 50% 90%, rgba(244, 114, 182, 0.6), transparent 70%),
+        #05030c;
+    }
+
+    /* ==============================================================
+       LOCK SCREEN (Bloqueio por PIN)
+    ============================================================== */
+    .lock-screen {
+      position: absolute; inset: 0; z-index: 200;
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      gap: 14px; padding: 30px 20px;
+      background: rgba(5,3,12,0.78);
+      backdrop-filter: blur(24px) saturate(140%);
+      -webkit-backdrop-filter: blur(24px) saturate(140%);
+    }
+    .lock-screen.open { display: flex; }
+    .lock-screen .lock-ic {
+      width: 52px; height: 52px; border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg-elev-2); border: 1px solid var(--stroke-strong);
+      color: var(--accent); font-size: 22px;
+      box-shadow: 0 0 24px rgba(167,139,250,0.35);
+    }
+    .lock-screen h3 { font-size: 16px; font-weight: 600; }
+    .lock-screen .lock-hint { color: var(--text-dim); font-size: 11px; }
+    .lock-dots {
+      display: flex; gap: 10px; margin: 4px 0 2px;
+    }
+    .lock-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--bg-elev-2); border: 1px solid var(--stroke-strong);
+      transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+    }
+    .lock-dot.filled { background: var(--accent); border-color: var(--accent); transform: scale(1.1); }
+    .lock-screen.shake .lock-dots { animation: shake 0.4s var(--ease); }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+    .pin-pad {
+      display: grid; grid-template-columns: repeat(3, 56px);
+      gap: 8px; margin-top: 6px;
+    }
+    .pin-key {
+      height: 42px; border-radius: 12px;
+      background: var(--bg-elev); border: 1px solid var(--stroke);
+      color: var(--text); font-size: 16px; font-weight: 500;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background var(--dur) var(--ease), transform 120ms var(--ease);
+    }
+    .pin-key:hover { background: var(--bg-elev-hover); }
+    .pin-key:active { transform: scale(0.94); }
+    .pin-key.wide { grid-column: span 1; }
+    .pin-key.act { color: var(--accent); }
+
+    /* ==============================================================
+       PAINEL RAPIDO — modo edicao e tiles arrastaveis
+    ============================================================== */
+    .qp-edit-btn {
+      position: absolute; top: 14px; right: 60px;
+      width: 32px; height: 32px; border-radius: 10px;
+      background: var(--bg-elev); border: 1px solid var(--stroke);
+      color: var(--text-dim); cursor: pointer; z-index: 5;
+      display: flex; align-items: center; justify-content: center;
+      transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+    }
+    .qp-edit-btn:hover { color: var(--text); background: var(--bg-elev-hover); }
+    .qp-edit-btn.active { color: var(--accent); border-color: var(--accent); }
+
+    .quick-panel.editing .qp-tile { cursor: grab; }
+    .quick-panel.editing .qp-tile:active { cursor: grabbing; }
+    .qp-tile.dragging { opacity: 0.35; transform: scale(0.96); }
+    .qp-tile.drag-over { outline: 2px dashed var(--accent); outline-offset: -2px; }
+    .qp-tile .qp-hide {
+      position: absolute; top: 4px; right: 4px;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: rgba(0,0,0,0.5); color: #fff;
+      display: none; align-items: center; justify-content: center;
+      font-size: 9px; cursor: pointer;
+      border: 1px solid var(--stroke-strong);
+    }
+    .quick-panel.editing .qp-tile { position: relative; }
+    .quick-panel.editing .qp-tile .qp-hide { display: flex; }
+
+    .qp-hidden-section {
+      display: none; margin-top: 6px;
+      padding: 8px; border-radius: 12px;
+      background: var(--bg-elev); border: 1px dashed var(--stroke);
+    }
+    .quick-panel.editing .qp-hidden-section.has-hidden { display: block; }
+    .qp-hidden-title { font-size: 10px; color: var(--text-mute); margin-bottom: 6px; }
+    .qp-hidden-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .qp-hidden-chip {
+      padding: 4px 10px; border-radius: 999px; font-size: 10px;
+      background: var(--bg-elev-2); border: 1px solid var(--stroke);
+      cursor: pointer; color: var(--text-dim);
+    }
+    .qp-hidden-chip:hover { color: var(--text); border-color: var(--accent); }
+
+    /* Aviso de estado do Gateway */
+    .gw-status {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 3px 10px; border-radius: 999px;
+      font-size: 10px; background: var(--bg-elev-2);
+      border: 1px solid var(--stroke);
+    }
+    .gw-status .gw-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-mute); }
+    .gw-status.ok .gw-dot { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+    .gw-status.err .gw-dot { background: var(--err); box-shadow: 0 0 6px var(--err); }
   </style>
 </head>
 <body>
@@ -785,6 +934,7 @@
 
     <!-- ==================== PAINEL DE CONTROLO RÁPIDO ==================== -->
     <div class="quick-panel" id="quick-panel">
+      <button class="qp-edit-btn" id="qp-edit-btn" title="Personalizar" onclick="toggleQuickPanelEdit()"><i class="fa-solid fa-pen"></i></button>
       <div class="qp-header">
         <div class="qp-title">
           <strong id="qp-title">Painel rápido</strong>
@@ -793,6 +943,10 @@
         <button class="qp-close" onclick="toggleQuickPanel(false)"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="qp-tiles" id="qp-tiles"></div>
+      <div class="qp-hidden-section" id="qp-hidden-section">
+        <div class="qp-hidden-title">Tiles ocultos (toca para mostrar)</div>
+        <div class="qp-hidden-list" id="qp-hidden-list"></div>
+      </div>
       <div class="qp-slider">
         <i class="fa-solid fa-sun"></i>
         <input type="range" class="range" style="flex:1" id="qp-brightness" min="20" max="100" step="1">
@@ -816,6 +970,35 @@
         <h3 id="modal-title"></h3>
         <p id="modal-msg"></p>
         <div class="modal-actions" id="modal-actions"></div>
+      </div>
+    </div>
+
+    <!-- ==================== WALLPAPER LAYERS ==================== -->
+    <div class="wallpaper-solid" id="wallpaper-solid" style="display:none"></div>
+    <div class="wallpaper-image" id="wallpaper-image" style="display:none"></div>
+
+    <!-- ==================== LOCK SCREEN (PIN) ==================== -->
+    <div class="lock-screen" id="lock-screen">
+      <div class="lock-ic"><i class="fa-solid fa-lock"></i></div>
+      <h3 id="lock-title">Introduz o PIN</h3>
+      <div class="lock-hint" id="lock-hint">Ecrã bloqueado</div>
+      <div class="lock-dots" id="lock-dots">
+        <div class="lock-dot"></div><div class="lock-dot"></div>
+        <div class="lock-dot"></div><div class="lock-dot"></div>
+      </div>
+      <div class="pin-pad" id="pin-pad">
+        <button class="pin-key" data-k="1">1</button>
+        <button class="pin-key" data-k="2">2</button>
+        <button class="pin-key" data-k="3">3</button>
+        <button class="pin-key" data-k="4">4</button>
+        <button class="pin-key" data-k="5">5</button>
+        <button class="pin-key" data-k="6">6</button>
+        <button class="pin-key" data-k="7">7</button>
+        <button class="pin-key" data-k="8">8</button>
+        <button class="pin-key" data-k="9">9</button>
+        <button class="pin-key act" data-k="cancel" id="pin-cancel">Cancelar</button>
+        <button class="pin-key" data-k="0">0</button>
+        <button class="pin-key act" data-k="back"><i class="fa-solid fa-delete-left"></i></button>
       </div>
     </div>
 
@@ -975,11 +1158,17 @@
       wifiOn: true, bluetoothOn: false, airplaneOn: false,
       dndOn: false, flashOn: false, rotationOn: true,
       lockOn: false, showStats: true,
+      wallpaper: { type: 'aurora', value: '' },
+      pin: '',
+      quickTileOrder: ['wifiOn','bluetoothOn','airplaneOn','dndOn','flashOn','rotationOn'],
+      quickTileHidden: [],
     };
     const defaultAssistant = {
       name: 'DC', language: 'pt', voice: 'feminina', personality: 'amigável',
       notifications: 'alto', allowCommands: true, integrations: ['spotify','agenda'],
       model: 'mock', privacy: true,
+      gatewayUrl: 'http://localhost:4000', gatewayOn: false,
+      sessionId: 'dc-' + Math.random().toString(36).slice(2, 10),
     };
 
     const system = { ...defaultSystem, ...(JSON.parse(localStorage.getItem(SYS_KEY) || '{}')) };
@@ -1116,16 +1305,41 @@
     ];
     function renderQuickTiles() {
       const wrap = document.getElementById('qp-tiles');
+      const hiddenSection = document.getElementById('qp-hidden-section');
+      const hiddenList = document.getElementById('qp-hidden-list');
       wrap.innerHTML = '';
-      QUICK_TILES.forEach(tile => {
+
+      // Garantir que todos os tiles existem na ordem (adiciona novos no fim)
+      const knownIds = QUICK_TILES.map(t => t.id);
+      system.quickTileOrder = system.quickTileOrder.filter(id => knownIds.includes(id));
+      knownIds.forEach(id => { if (!system.quickTileOrder.includes(id)) system.quickTileOrder.push(id); });
+      system.quickTileHidden = (system.quickTileHidden || []).filter(id => knownIds.includes(id));
+
+      const visibleIds = system.quickTileOrder.filter(id => !system.quickTileHidden.includes(id));
+      const hiddenIds  = system.quickTileOrder.filter(id =>  system.quickTileHidden.includes(id));
+
+      visibleIds.forEach(id => {
+        const tile = QUICK_TILES.find(t => t.id === id);
+        if (!tile) return;
         const on = !!system[tile.id];
         const el = document.createElement('div');
         el.className = 'qp-tile' + (on ? ' on' : '');
+        el.dataset.tileId = tile.id;
+        el.draggable = false;
         el.innerHTML = `
           <div class="qp-ic"><i class="${tile.icon}"></i></div>
-          <div class="qp-txt"><strong>${tile.label}</strong><small>${tile.sub()}</small></div>`;
-        el.onclick = () => {
-          // Modo avião desliga rádios
+          <div class="qp-txt"><strong>${tile.label}</strong><small>${tile.sub()}</small></div>
+          <span class="qp-hide" title="Ocultar"><i class="fa-solid fa-eye-slash"></i></span>`;
+        el.onclick = (e) => {
+          const panel = document.getElementById('quick-panel');
+          if (panel.classList.contains('editing')) {
+            if (e.target.closest('.qp-hide')) {
+              if (!system.quickTileHidden.includes(tile.id)) system.quickTileHidden.push(tile.id);
+              saveSystem(); renderQuickTiles();
+            }
+            return;
+          }
+          // Toggle normal
           if (tile.id === 'airplaneOn' && !system.airplaneOn) {
             system.airplaneOn = true; system.wifiOn = false; system.bluetoothOn = false;
           } else if (tile.id === 'airplaneOn' && system.airplaneOn) {
@@ -1139,8 +1353,77 @@
           }
           saveSystem(); renderQuickTiles(); updateStatusIcons();
         };
+        attachTileDrag(el);
         wrap.appendChild(el);
       });
+
+      // Seccao de ocultos
+      hiddenList.innerHTML = '';
+      if (hiddenIds.length) {
+        hiddenSection.classList.add('has-hidden');
+        hiddenIds.forEach(id => {
+          const tile = QUICK_TILES.find(t => t.id === id);
+          if (!tile) return;
+          const chip = document.createElement('span');
+          chip.className = 'qp-hidden-chip';
+          chip.innerHTML = `<i class="${tile.icon}"></i> ${tile.label}`;
+          chip.onclick = () => {
+            system.quickTileHidden = system.quickTileHidden.filter(x => x !== id);
+            saveSystem(); renderQuickTiles();
+          };
+          hiddenList.appendChild(chip);
+        });
+      } else {
+        hiddenSection.classList.remove('has-hidden');
+      }
+    }
+
+    /* Drag & drop dos tiles do painel rapido */
+    let dragSrcEl = null;
+    function attachTileDrag(el) {
+      el.addEventListener('mousedown', () => {
+        if (!document.getElementById('quick-panel').classList.contains('editing')) return;
+        el.draggable = true;
+      });
+      el.addEventListener('touchstart', () => {
+        if (!document.getElementById('quick-panel').classList.contains('editing')) return;
+        el.draggable = true;
+      }, { passive: true });
+      el.addEventListener('dragstart', (e) => {
+        if (!document.getElementById('quick-panel').classList.contains('editing')) { e.preventDefault(); return; }
+        dragSrcEl = el; el.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        try { e.dataTransfer.setData('text/plain', el.dataset.tileId); } catch(_) {}
+      });
+      el.addEventListener('dragover', (e) => {
+        if (!dragSrcEl || dragSrcEl === el) return;
+        e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+        el.classList.add('drag-over');
+      });
+      el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+      el.addEventListener('drop', (e) => {
+        e.preventDefault(); el.classList.remove('drag-over');
+        if (!dragSrcEl || dragSrcEl === el) return;
+        const srcId = dragSrcEl.dataset.tileId;
+        const dstId = el.dataset.tileId;
+        const order = system.quickTileOrder.slice();
+        const si = order.indexOf(srcId); order.splice(si, 1);
+        const di = order.indexOf(dstId); order.splice(di, 0, srcId);
+        system.quickTileOrder = order;
+        saveSystem(); renderQuickTiles();
+      });
+      el.addEventListener('dragend', () => {
+        el.classList.remove('dragging'); el.draggable = false; dragSrcEl = null;
+      });
+    }
+
+    function toggleQuickPanelEdit() {
+      const panel = document.getElementById('quick-panel');
+      const btn = document.getElementById('qp-edit-btn');
+      const editing = panel.classList.toggle('editing');
+      btn.classList.toggle('active', editing);
+      btn.innerHTML = editing ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-pen"></i>';
+      renderQuickTiles();
     }
 
     function toggleQuickPanel(force) {
@@ -1270,6 +1553,9 @@
       if (tab === 'conversa') {
         panel.innerHTML = `
           <div class="card" style="flex:1;display:flex;flex-direction:column;min-height:0;margin-top:8px;">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+              <span class="gw-status" id="gw-status-badge"><span class="gw-dot"></span><span class="gw-txt">Gateway desligado</span></span>
+            </div>
             <div class="chat-log" id="chat-log">
               <div class="msg bot">Olá! Sou a <b>${assistant.name}</b>. Em que posso ajudar?</div>
             </div>
@@ -1284,6 +1570,12 @@
               <button class="btn" onclick="assistantSend()"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
           </div>`;
+        // Actualizar badge do estado do gateway
+        if (assistant.gatewayOn && assistant.gatewayUrl) {
+          checkGatewayHealth().then(r => updateGatewayStatusUI(r.ok ? 'ok' : 'err'));
+        } else {
+          updateGatewayStatusUI('off');
+        }
       } else if (tab === 'estado') {
         panel.innerHTML = `
           <div class="card" style="margin-top:8px"><div class="card-title"><strong>Estado do sistema</strong><small>DC Assistant</small></div>
@@ -1325,30 +1617,113 @@
               <select class="dc-select" onchange="assistant.model=this.value;saveAssistant()">
                 <option value="mock" ${assistant.model==='mock'?'selected':''}>Mock (local)</option>
                 <option value="anthropic" ${assistant.model==='anthropic'?'selected':''}>Anthropic</option></select></div>
+            <div class="row"><div class="row-label"><strong>Ligar ao Gateway</strong><small>respostas reais em vez de simuladas</small></div>
+              <label class="switch"><input type="checkbox" ${assistant.gatewayOn?'checked':''} onchange="assistant.gatewayOn=this.checked;saveAssistant();if(this.checked){testGatewayNow()}else{updateGatewayStatusUI('off')}"><span class="slider-toggle"></span></label></div>
+            <div class="row"><div class="row-label"><strong>URL do Gateway</strong></div>
+              <input class="dc-input" id="asst-gw-url" value="${assistant.gatewayUrl}" placeholder="http://localhost:4000" onchange="assistant.gatewayUrl=this.value.trim();saveAssistant()"></div>
+            <div class="row" style="gap:8px">
+              <button class="btn sm" id="gw-test-btn" onclick="testGatewayNow()">Testar ligação</button>
+              <span class="gw-status" id="gw-status-badge"><span class="gw-dot"></span><span class="gw-txt">Gateway ${assistant.gatewayOn?'a testar...':'desligado'}</span></span>
+            </div>
             <div class="row"><div class="row-label"><strong>Privacidade e histórico</strong></div>
               <label class="switch"><input type="checkbox" ${assistant.privacy?'checked':''} onchange="assistant.privacy=this.checked;saveAssistant()"><span class="slider-toggle"></span></label></div>
           </div>`;
       }
     }
     function assistantQuick(cmd) { document.getElementById('chat-text').value = cmd; assistantSend(); }
-    function assistantSend() {
+
+    async function callGateway(text) {
+      const url = (assistant.gatewayUrl || '').replace(/\/$/, '');
+      if (!url) throw new Error('Gateway URL nao definido');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
+      try {
+        const res = await fetch(`${url}/api/assistant/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: assistant.sessionId, text }),
+          signal: controller.signal,
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        return typeof data === 'string' ? data : (data.reply?.text || data.text || data.message || JSON.stringify(data));
+      } finally { clearTimeout(timeoutId); }
+    }
+
+    async function checkGatewayHealth() {
+      const url = (assistant.gatewayUrl || '').replace(/\/$/, '');
+      if (!url) return { ok: false, err: 'URL vazio' };
+      try {
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch(`${url}/health`, { signal: controller.signal });
+        clearTimeout(t);
+        if (!res.ok) return { ok: false, err: `HTTP ${res.status}` };
+        const data = await res.json().catch(() => ({}));
+        return { ok: true, data };
+      } catch (err) { return { ok: false, err: (err && err.message) || 'erro' }; }
+    }
+
+    function updateGatewayStatusUI(state) {
+      const badge = document.getElementById('gw-status-badge');
+      if (!badge) return;
+      badge.classList.remove('ok', 'err');
+      if (state === 'ok') { badge.classList.add('ok'); badge.querySelector('.gw-txt').textContent = 'Gateway ligado'; }
+      else if (state === 'err') { badge.classList.add('err'); badge.querySelector('.gw-txt').textContent = 'Gateway indisponível'; }
+      else { badge.querySelector('.gw-txt').textContent = 'Gateway desligado'; }
+    }
+
+    async function assistantSend() {
       const input = document.getElementById('chat-text');
       const text = input.value.trim(); if (!text) return;
       const log = document.getElementById('chat-log');
       log.innerHTML += `<div class="msg user">${text}</div>`;
       input.value = ''; chatHistory.unshift(text);
-      setTimeout(() => {
-        const replies = {
-          'estado do sistema':'Tudo operacional. Rede ligada, temperatura 23.4 °C, 1 alarme ativo.',
-          'análise de alarmes':'1 alarme ativo (prioridade alta): temperatura elevada no controlo.',
-          'resumo de eventos':'Hoje: 2 eventos na agenda, 0 manutenções agendadas.',
-          'sugestões':'Sugiro baixar o setpoint do controlo em 1 °C e verificar a ventilação.',
-        };
-        const reply = replies[text.toLowerCase()] || `Recebido: "${text}". (Resposta simulada — liga ao Gateway na fase 0.5.)`;
-        log.innerHTML += `<div class="msg bot">${reply}</div>`;
-        log.scrollTop = log.scrollHeight;
-      }, 300);
       log.scrollTop = log.scrollHeight;
+
+      // Placeholder "a pensar..."
+      const thinking = document.createElement('div');
+      thinking.className = 'msg bot';
+      thinking.innerHTML = '<i class="fa-solid fa-ellipsis fa-fade"></i>';
+      log.appendChild(thinking);
+      log.scrollTop = log.scrollHeight;
+
+      const fallbackReplies = {
+        'estado do sistema':'Tudo operacional. Rede ligada, temperatura 23.4 °C, 1 alarme ativo.',
+        'análise de alarmes':'1 alarme ativo (prioridade alta): temperatura elevada no controlo.',
+        'resumo de eventos':'Hoje: 2 eventos na agenda, 0 manutenções agendadas.',
+        'sugestões':'Sugiro baixar o setpoint do controlo em 1 °C e verificar a ventilação.',
+      };
+
+      if (assistant.gatewayOn && assistant.gatewayUrl) {
+        try {
+          const reply = await callGateway(text);
+          thinking.textContent = reply;
+          updateGatewayStatusUI('ok');
+        } catch (err) {
+          thinking.innerHTML = `<i>Falha ao contactar o Gateway (${(err && err.message) || 'erro'}). A usar resposta simulada.</i><br>` +
+            (fallbackReplies[text.toLowerCase()] || `Recebido: "${text}".`);
+          updateGatewayStatusUI('err');
+        }
+      } else {
+        const reply = fallbackReplies[text.toLowerCase()] || `Recebido: "${text}". (Resposta simulada — ativa o Gateway nas Definições do assistente.)`;
+        thinking.textContent = reply;
+      }
+      log.scrollTop = log.scrollHeight;
+    }
+
+    async function testGatewayNow() {
+      const btn = document.getElementById('gw-test-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'A testar...'; }
+      const result = await checkGatewayHealth();
+      if (result.ok) {
+        updateGatewayStatusUI('ok');
+        toast({ type:'ok', title:'Gateway ligado', message: (result.data && result.data.service) || 'dc-gateway' });
+      } else {
+        updateGatewayStatusUI('err');
+        toast({ type:'error', title:'Gateway indisponível', message: result.err });
+      }
+      if (btn) { btn.disabled = false; btn.textContent = 'Testar ligação'; }
     }
 
     /* -------- Controlo -------- */
@@ -1584,7 +1959,7 @@
             <input type="range" class="range" min="20" max="100" value="${system.brightness}" oninput="system.brightness=+this.value;saveSystem();this.previousElementSibling.querySelector('small').textContent=this.value+'%';document.getElementById('device').style.filter='brightness('+(20+this.value*0.8)+'%)';document.getElementById('qp-brightness').value=this.value;document.getElementById('qp-brightness-val').textContent=this.value+'%'"></div>
           <div class="row"><div class="row-label"><strong>Volume</strong><small>${system.volume}%</small></div>
             <input type="range" class="range" min="0" max="100" value="${system.volume}" oninput="system.volume=+this.value;saveSystem();this.previousElementSibling.querySelector('small').textContent=this.value+'%';document.getElementById('qp-volume').value=this.value;document.getElementById('qp-volume-val').textContent=this.value+'%';updateStatusIcons()"></div>
-          <div class="row"><div class="row-label"><strong>Papel de parede</strong></div><button class="btn ghost sm" onclick="toast({type:'info',title:'Em breve'})">Escolher</button></div>
+          <div class="row"><div class="row-label"><strong>Papel de parede</strong><small id="wp-current-label">${wallpaperLabel()}</small></div><button class="btn ghost sm" onclick="openWallpaperPicker()">Escolher</button></div>
           <div class="row"><div class="row-label"><strong>Tamanho dos textos</strong></div>
             <select class="dc-select"><option>Normal</option><option>Grande</option></select></div>
           <div class="row"><div class="row-label"><strong>Mostrar CPU / FPS</strong></div>
@@ -1600,9 +1975,15 @@
           <div class="row"><div class="row-label"><strong>Estado da ligação</strong></div><b style="color:${system.wifiOn?'var(--ok)':'var(--err)'}">${system.wifiOn?'Ligada':'Desligada'}</b></div>
           <div class="row"><div class="row-label"><strong>Configuração IP</strong></div><span class="muted">DHCP</span></div>`,
         'Segurança': `
-          <div class="row"><div class="row-label"><strong>Bloqueio do sistema</strong></div>
-            <label class="switch"><input type="checkbox" ${system.lockOn?'checked':''} onchange="system.lockOn=this.checked;saveSystem()"><span class="slider-toggle"></span></label></div>
-          <div class="row"><div class="row-label"><strong>PIN / palavra-passe</strong></div><button class="btn ghost sm" onclick="toast({type:'info',title:'Em breve'})">Definir</button></div>
+          <div class="row"><div class="row-label"><strong>Bloqueio do sistema</strong><small>pede o PIN no arranque</small></div>
+            <label class="switch"><input type="checkbox" ${system.lockOn?'checked':''} onchange="onToggleLock(this)"><span class="slider-toggle"></span></label></div>
+          <div class="row"><div class="row-label"><strong>PIN de arranque</strong><small>${system.pin?'Definido ('+system.pin.length+' dígitos)':'Não definido'}</small></div>
+            <div style="display:flex;gap:6px">
+              <button class="btn ghost sm" onclick="openPinSetup()">${system.pin?'Alterar':'Definir'}</button>
+              ${system.pin?`<button class="btn ghost sm" onclick="removePin()">Remover</button>`:''}
+            </div></div>
+          <div class="row"><div class="row-label"><strong>Bloquear agora</strong><small>ativa o ecrã de bloqueio</small></div>
+            <button class="btn sm" onclick="lockNow()" ${system.pin?'':'disabled'}>Bloquear</button></div>
           <div class="row"><div class="row-label"><strong>Utilizadores</strong></div><span class="muted">1</span></div>
           <div class="row"><div class="row-label"><strong>Sessões ativas</strong></div><span class="muted">1</span></div>`,
         'Hardware': `
@@ -1623,6 +2004,216 @@
     }
 
     /* ================================================================
+       WALLPAPER (Papel de parede)
+    ================================================================ */
+    const WALLPAPER_PRESETS = [
+      { id: 'aurora',   type: 'aurora', label: 'Aurora animada' },
+      { id: 'nebula',   type: 'solid',  label: 'Nébula',   value: 'linear-gradient(135deg,#1e0a3c 0%,#3b0764 45%,#831843 100%)' },
+      { id: 'ocean',    type: 'solid',  label: 'Oceano',   value: 'linear-gradient(135deg,#052e4a 0%,#0e7490 60%,#0891b2 100%)' },
+      { id: 'sunset',   type: 'solid',  label: 'Pôr do sol',value:'linear-gradient(135deg,#4a044e 0%,#be185d 55%,#f97316 100%)' },
+      { id: 'forest',   type: 'solid',  label: 'Floresta', value: 'linear-gradient(135deg,#052e16 0%,#166534 55%,#4d7c0f 100%)' },
+      { id: 'graphite', type: 'solid',  label: 'Grafite',  value: 'linear-gradient(135deg,#0f172a 0%,#1e293b 55%,#334155 100%)' },
+    ];
+
+    function wallpaperLabel() {
+      const wp = system.wallpaper || { type: 'aurora' };
+      if (wp.type === 'aurora') return 'Aurora animada';
+      if (wp.type === 'image')  return 'Imagem personalizada';
+      const preset = WALLPAPER_PRESETS.find(p => p.id === wp.id);
+      return preset ? preset.label : 'Cor sólida';
+    }
+
+    function applyWallpaper() {
+      const wp = system.wallpaper || { type: 'aurora' };
+      const dev   = document.getElementById('device');
+      const solid = document.getElementById('wallpaper-solid');
+      const img   = document.getElementById('wallpaper-image');
+      dev.setAttribute('data-wallpaper', wp.type);
+      if (wp.type === 'solid') {
+        solid.style.display = 'block';
+        solid.style.background = wp.value || '#05030c';
+        img.style.display = 'none';
+      } else if (wp.type === 'image') {
+        img.style.display = 'block';
+        img.style.backgroundImage = `url("${wp.value}")`;
+        solid.style.display = 'none';
+      } else {
+        solid.style.display = 'none';
+        img.style.display = 'none';
+      }
+      const lbl = document.getElementById('wp-current-label');
+      if (lbl) lbl.textContent = wallpaperLabel();
+    }
+
+    function setWallpaper(wp) {
+      system.wallpaper = wp; saveSystem(); applyWallpaper();
+      toast({ type:'ok', title:'Papel de parede atualizado', message: wallpaperLabel() });
+    }
+
+    function openWallpaperPicker() {
+      const wp = system.wallpaper || { type: 'aurora', id: 'aurora' };
+      const swatches = WALLPAPER_PRESETS.map(p => {
+        const style = p.type === 'aurora'
+          ? 'class="wp-aurora"'
+          : `style="background:${p.value}"`;
+        const selected = ((wp.type === p.type) && (wp.id === p.id)) ? ' selected' : '';
+        return `<div class="wp-swatch${selected}" ${style} data-id="${p.id}"><span class="wp-label">${p.label}</span></div>`;
+      }).join('');
+
+      showModal({
+        type:'info', title:'Papel de parede', message:'',
+        actions: [{ label:'Fechar', style:'ghost' }],
+      });
+      // Substituir o conteudo do modal por picker
+      const m = document.getElementById('modal');
+      const msg = document.getElementById('modal-msg');
+      msg.innerHTML = `
+        <div style="text-align:left;color:var(--text-dim);font-size:11px;margin-bottom:4px">Escolhe um estilo:</div>
+        <div class="wp-grid" id="wp-grid">${swatches}</div>
+        <div style="margin-top:12px;text-align:left;color:var(--text-dim);font-size:11px">Ou usa uma imagem (URL):</div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <input class="dc-input" id="wp-url-input" placeholder="https://.../imagem.jpg" style="flex:1;max-width:none" value="${wp.type==='image'?(wp.value||''):''}">
+          <button class="btn sm" id="wp-url-apply">Aplicar</button>
+        </div>`;
+      m.querySelectorAll('#wp-grid .wp-swatch').forEach(sw => {
+        sw.onclick = () => {
+          const preset = WALLPAPER_PRESETS.find(p => p.id === sw.dataset.id);
+          if (!preset) return;
+          if (preset.type === 'aurora') setWallpaper({ type:'aurora', id:'aurora' });
+          else setWallpaper({ type:'solid', id: preset.id, value: preset.value });
+          closeModal();
+        };
+      });
+      m.querySelector('#wp-url-apply').onclick = () => {
+        const v = m.querySelector('#wp-url-input').value.trim();
+        if (!v) { toast({ type:'warn', title:'Insere um URL de imagem' }); return; }
+        setWallpaper({ type:'image', id:'image', value: v });
+        closeModal();
+      };
+    }
+
+    /* ================================================================
+       PIN LOCK (Bloqueio de arranque)
+    ================================================================ */
+    let pinBuffer = '';
+    let pinMode = 'unlock'; // 'unlock' | 'setup' | 'setup-confirm'
+    let pinSetupFirst = '';
+    let pinOnUnlock = null;
+
+    function updateLockDots() {
+      const dots = document.querySelectorAll('#lock-dots .lock-dot');
+      dots.forEach((d, i) => d.classList.toggle('filled', i < pinBuffer.length));
+    }
+
+    function showLockScreen(mode = 'unlock', opts = {}) {
+      pinMode = mode; pinBuffer = ''; pinSetupFirst = '';
+      pinOnUnlock = opts.onUnlock || null;
+      const scr = document.getElementById('lock-screen');
+      const title = document.getElementById('lock-title');
+      const hint  = document.getElementById('lock-hint');
+      const cancel = document.getElementById('pin-cancel');
+      if (mode === 'setup') {
+        title.textContent = 'Definir novo PIN';
+        hint.textContent = '4 dígitos';
+        cancel.style.visibility = 'visible';
+      } else if (mode === 'setup-confirm') {
+        title.textContent = 'Confirma o PIN';
+        hint.textContent = 'Repete os 4 dígitos';
+        cancel.style.visibility = 'visible';
+      } else {
+        title.textContent = 'Introduz o PIN';
+        hint.textContent = opts.hint || 'Ecrã bloqueado';
+        cancel.style.visibility = opts.allowCancel ? 'visible' : 'hidden';
+      }
+      updateLockDots();
+      scr.classList.add('open');
+    }
+    function hideLockScreen() { document.getElementById('lock-screen').classList.remove('open'); }
+
+    function pinPress(k) {
+      if (k === 'cancel') { pinBuffer=''; pinSetupFirst=''; updateLockDots(); hideLockScreen(); return; }
+      if (k === 'back')   { pinBuffer = pinBuffer.slice(0, -1); updateLockDots(); return; }
+      if (pinBuffer.length >= 4) return;
+      pinBuffer += String(k); updateLockDots();
+      if (pinBuffer.length === 4) setTimeout(handlePinComplete, 150);
+    }
+
+    function shakeLock() {
+      const scr = document.getElementById('lock-screen');
+      scr.classList.add('shake');
+      setTimeout(() => scr.classList.remove('shake'), 450);
+    }
+
+    function handlePinComplete() {
+      if (pinMode === 'setup') {
+        pinSetupFirst = pinBuffer; pinBuffer = '';
+        showLockScreen('setup-confirm');
+        return;
+      }
+      if (pinMode === 'setup-confirm') {
+        if (pinBuffer === pinSetupFirst) {
+          system.pin = pinBuffer; system.lockOn = true;
+          saveSystem(); hideLockScreen();
+          toast({ type:'ok', title:'PIN definido', message:'Bloqueio ativo no arranque' });
+          if (currentApp === 'definicoes') renderSetCat();
+        } else {
+          shakeLock(); pinBuffer=''; updateLockDots();
+          toast({ type:'error', title:'PINs não coincidem', message:'Tenta de novo' });
+          pinSetupFirst = ''; setTimeout(() => showLockScreen('setup'), 300);
+        }
+        return;
+      }
+      // unlock
+      if (pinBuffer === system.pin) {
+        pinBuffer=''; updateLockDots(); hideLockScreen();
+        if (pinOnUnlock) { const cb = pinOnUnlock; pinOnUnlock = null; cb(); }
+      } else {
+        shakeLock(); pinBuffer=''; updateLockDots();
+      }
+    }
+
+    function openPinSetup() {
+      // Se ja existe PIN, exigir o atual antes de alterar
+      if (system.pin) {
+        showLockScreen('unlock', { hint:'Introduz o PIN atual', allowCancel: true, onUnlock: () => showLockScreen('setup') });
+      } else {
+        showLockScreen('setup');
+      }
+    }
+
+    function removePin() {
+      if (!system.pin) return;
+      showLockScreen('unlock', { hint:'Confirma com o PIN atual', allowCancel: true, onUnlock: () => {
+        system.pin = ''; system.lockOn = false; saveSystem();
+        toast({ type:'ok', title:'PIN removido' });
+        if (currentApp === 'definicoes') renderSetCat();
+      }});
+    }
+
+    function lockNow() {
+      if (!system.pin) { toast({ type:'warn', title:'Define um PIN primeiro' }); return; }
+      showLockScreen('unlock', { hint:'Ecrã bloqueado' });
+    }
+
+    function onToggleLock(el) {
+      if (el.checked && !system.pin) {
+        el.checked = false;
+        toast({ type:'warn', title:'Define um PIN primeiro' });
+        openPinSetup();
+        return;
+      }
+      system.lockOn = el.checked; saveSystem();
+      if (currentApp === 'definicoes') renderSetCat();
+    }
+
+    // Ligar botoes do teclado do lock
+    document.getElementById('pin-pad').addEventListener('click', (e) => {
+      const b = e.target.closest('.pin-key');
+      if (!b) return;
+      pinPress(b.dataset.k);
+    });
+
+    /* ================================================================
        INIT
     ================================================================ */
     function boot() {
@@ -1630,6 +2221,7 @@
       applyI18n();
       updateStatusIcons();
       initCustomSelects();
+      applyWallpaper();
       document.getElementById('qp-brightness').value = system.brightness;
       document.getElementById('qp-brightness-val').textContent = system.brightness + '%';
       document.getElementById('qp-volume').value = system.volume;
@@ -1640,6 +2232,10 @@
       // Splash — esconder após ~2.4s
       setTimeout(() => {
         document.getElementById('splash').classList.add('hide');
+        // Mostrar lock screen se PIN estiver ativo
+        if (system.lockOn && system.pin) {
+          showLockScreen('unlock', { hint:'Introduz o PIN para desbloquear' });
+        }
       }, 2400);
     }
     boot();
