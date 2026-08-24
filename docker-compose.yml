@@ -1,14 +1,18 @@
 # DC — Docker Compose
 #
-# Só o dc-gateway corre aqui. O firmware do ESP32-S3 (ES3C28P) NÃO é
-# executável em container — compila-se e grava-se com PlatformIO/ESP-IDF
-# (ver firmware/README.md).
+# Dois serviços:
+#   - dc-gateway: o backend real (Node/TypeScript) — o "cérebro" da DC.
+#   - frontend-preview: SÓ serve o mockup HTML/CSS/JS (Echo Mind UI) para
+#     pré-visualizar o conceito visual no browser do PC. NÃO é a interface
+#     real do dispositivo — essa é LVGL e só corre no ESP32-S3 físico
+#     (ver firmware/README.md). Isto é apenas uma prévia estática.
 #
 # Uso:
 #   cp dc-gateway/.env.example dc-gateway/.env   # preencher com valores reais
 #   docker compose up -d --build
 #
-# O serviço fica disponível em http://localhost:4000 (ver PORT no .env).
+# dc-gateway fica em http://localhost:4000 (ver PORT no .env)
+# frontend-preview fica em http://localhost:8080
 
 services:
   dc-gateway:
@@ -27,3 +31,12 @@ services:
       timeout: 3s
       retries: 3
       start_period: 5s
+
+  frontend-preview:
+    build:
+      context: ./frontend-preview
+      dockerfile: Dockerfile
+    container_name: dc-frontend-preview
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PREVIEW_PORT:-8080}:80"

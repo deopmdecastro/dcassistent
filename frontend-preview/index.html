@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Echo Mind UI</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #0c0814;
+      --bg-card: rgba(255, 255, 255, 0.05);
+      --bg-card-hover: rgba(255, 255, 255, 0.08);
+      --purple-accent: #8b5cf6;
+      --purple-glow: rgba(139, 92, 246, 0.4);
+      --text-main: #ffffff;
+      --text-muted: #a1a1aa;
+      --border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      user-select: none;
+    }
+
+    body {
+      background-color: #050308;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: var(--text-main);
+    }
+
+    /* Enclosure Simulating the Display */
+    .screen-container {
+      width: 800px;
+      height: 480px;
+      background: var(--bg-main);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 0 30px rgba(139, 92, 246, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Screen Navigation Logic */
+    .screen {
+      display: none;
+      width: 100%;
+      height: 100%;
+      padding: 24px;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .screen.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* General Components */
+    .nav-bar {
+      position: absolute;
+      bottom: 12px;
+      right: 20px;
+      display: flex;
+      gap: 8px;
+      z-index: 100;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 4px 8px;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 12px;
+    }
+
+    .nav-btn.active {
+      background: var(--purple-accent);
+      color: #fff;
+    }
+
+    /* Screen 1: Home */
+    #screen-1 {
+      justify-content: space-between;
+    }
+    .top-tabs {
+      display: flex;
+      justify-content: flex-end;
+      gap: 20px;
+    }
+    .tab {
+      color: var(--text-muted);
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .tab.active {
+      color: #fff;
+      border-bottom: 2px solid var(--purple-accent);
+      padding-bottom: 2px;
+    }
+    .hero-section {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 100%;
+    }
+    .hero-title {
+      font-size: 36px;
+      font-weight: 300;
+    }
+    .hero-title span {
+      font-weight: 700;
+      color: var(--purple-accent);
+    }
+    .avatar-ring {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      border: 2px solid var(--purple-accent);
+      box-shadow: 0 0 25px var(--purple-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%);
+    }
+    .avatar-ring img {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .home-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .btn-start {
+      background: var(--purple-accent);
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+    .sys-stats {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    /* Screen 2: Chat & Topics */
+    .header-user {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .user-info img {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+    }
+    .grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .action-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+    .action-card i {
+      font-size: 24px;
+      color: var(--purple-accent);
+    }
+    .topic-pills {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    /* Screen 3: Voice Assessment */
+    .voice-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      height: 100%;
+    }
+    .wave-container {
+      width: 100%;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.3) 0%, transparent 70%);
+    }
+    .mic-btn-large {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--purple-accent);
+      border: none;
+      color: #fff;
+      font-size: 24px;
+      box-shadow: 0 0 20px var(--purple-glow);
+      cursor: pointer;
+    }
+
+    /* Screen 4: Apps Grid */
+    .app-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .app-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .app-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="screen-container">
+    
+    <!-- Screen 1: Home -->
+    <div class="screen active" id="screen-1">
+      <div class="top-tabs">
+        <span class="tab active">Profile</span>
+        <span class="tab">Analytics</span>
+        <span class="tab">Shop</span>
+      </div>
+      <div class="hero-section">
+        <div>
+          <h1 class="hero-title">Meet the<br><span>Echo Mind!</span></h1>
+        </div>
+        <div class="avatar-ring">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300" alt="Avatar">
+        </div>
+      </div>
+      <div class="home-footer">
+        <button class="btn-start" onclick="switchScreen(2)">Get Started <i class="fa-solid fa-chevron-right"></i></button>
+        <div class="sys-stats">
+          <p>100 FPS</p>
+          <p>87% CPU</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 2: Chat & Topics -->
+    <div class="screen" id="screen-2">
+      <div class="header-user">
+        <div class="user-info">
+          <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100" alt="User">
+          <span>Mark Jonson!</span>
+        </div>
+        <i class="fa-regular fa-bell"></i>
+      </div>
+      <div class="grid-2col">
+        <div style="display: flex; gap: 10px;">
+          <div class="action-card" style="flex: 1;" onclick="switchScreen(3)">
+            <i class="fa-regular fa-comment"></i>
+            <span>Chat with Echo Mind</span>
+          </div>
+          <div class="action-card" style="flex: 1;" onclick="switchScreen(3)">
+            <i class="fa-solid fa-microphone"></i>
+            <span>Talk with Echo Mind</span>
+          </div>
+        </div>
+        <div style="background: var(--bg-card); border-radius: 16px; padding: 16px;">
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 10px;">
+            <span>History</span>
+            <span style="color: var(--purple-accent);">View All</span>
+          </div>
+          <p style="font-size: 13px;">How to create IoT app user flow?</p>
+          <span style="font-size: 10px; color: var(--text-muted);">19/02/2024</span>
+        </div>
+      </div>
+      <div style="margin-top: 20px;">
+        <span style="font-size: 14px;">Topics</span>
+        <div class="topic-pills">
+          <div class="pill"><i class="fa-solid fa-chart-line"></i><br>Finance</div>
+          <div class="pill"><i class="fa-solid fa-shield-halved"></i><br>Health</div>
+          <div class="pill"><i class="fa-solid fa-code"></i><br>Develop</div>
+          <div class="pill"><i class="fa-solid fa-building"></i><br>Business</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 3: Voice Assessment -->
+    <div class="screen" id="screen-3">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <i class="fa-solid fa-chevron-left" onclick="switchScreen(2)" style="cursor: pointer;"></i>
+        <span>Voice Assessment</span>
+        <div></div>
+      </div>
+      <div class="voice-wrapper">
+        <p style="color: var(--text-muted); margin-top: 10px;">Go ahead, I'm listening...</p>
+        <div class="wave-container">
+          <i class="fa-solid fa-wave-square" style="font-size: 60px; color: var(--purple-accent);"></i>
+        </div>
+        <p style="text-align: center; font-size: 13px; color: var(--text-muted); max-width: 80%;">
+          Fluid organic shapes dance across the canvas, conveying a sense of harmony.
+        </p>
+        <div style="display: flex; align-items: center; gap: 40px; margin-bottom: 10px;">
+          <i class="fa-solid fa-pen"></i>
+          <button class="mic-btn-large" onclick="switchScreen(4)"><i class="fa-solid fa-microphone"></i></button>
+          <i class="fa-regular fa-bookmark"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 4: Apps Grid -->
+    <div class="screen" id="screen-4">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Apps</h2>
+        <div>
+          <i class="fa-solid fa-magnifying-glass" style="margin-right: 15px;"></i>
+          <i class="fa-solid fa-gear"></i>
+        </div>
+      </div>
+      <div class="app-grid">
+        <div class="app-item"><div class="app-icon" style="color: #1DB954;"><i class="fa-brands fa-spotify"></i></div><span>Spotify</span></div>
+        <div class="app-item"><div class="app-icon" style="color: #4285F4;"><i class="fa-regular fa-calendar-days"></i></div><span>Agenda</span></div>
+        <div class="app-item"><div class="app-icon" style="color: #FFBA08;"><i class="fa-regular fa-folder-open"></i></div><span>Gestor</span></div>
+        <div class="app-item"><div class="app-icon" style="color: #EA4335;"><i class="fa-regular fa-envelope"></i></div><span>E-mail</span></div>
+        <div class="app-item"><div class="app-icon" style="color: #F72585;"><i class="fa-regular fa-note-sticky"></i></div><span>Notas</span></div>
+        <div class="app-item"><div class="app-icon" style="color: #4CC9F0;"><i class="fa-solid fa-cloud-sun"></i></div><span>Clima</span></div>
+        <div class="app-item"><div class="app-icon" style="color: #7209B7;"><i class="fa-solid fa-chart-simple"></i></div><span>Relatórios</span></div>
+        <div class="app-item"><div class="app-icon" style="color: #8E9AAF;"><i class="fa-solid fa-gear"></i></div><span>Config.</span></div>
+      </div>
+    </div>
+
+    <!-- Floating Navigation Bar for Preview -->
+    <div class="nav-bar">
+      <button class="nav-btn active" onclick="switchScreen(1)">1</button>
+      <button class="nav-btn" onclick="switchScreen(2)">2</button>
+      <button class="nav-btn" onclick="switchScreen(3)">3</button>
+      <button class="nav-btn" onclick="switchScreen(4)">4</button>
+    </div>
+
+  </div>
+
+  <script>
+    function switchScreen(screenNumber) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      
+      document.getElementById(`screen-${screenNumber}`).classList.add('active');
+      document.querySelectorAll('.nav-btn')[screenNumber - 1].classList.add('active');
+    }
+  </script>
+</body>
+</html>
