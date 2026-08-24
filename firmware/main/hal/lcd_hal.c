@@ -86,7 +86,7 @@ esp_err_t dc_lcd_hal_init(esp_lcd_panel_handle_t *out_panel,
 
     esp_lcd_panel_dev_config_t panel_cfg = {
         .reset_gpio_num = DC_LCD_PIN_RST,
-        .color_space    = ESP_LCD_COLOR_SPACE_BGR,
+        .rgb_ele_order  = LCD_RGB_ELEMENT_ORDER_BGR,
         .bits_per_pixel = 16,
     };
     ESP_ERROR_CHECK(esp_lcd_new_panel_ili9341(*out_io_handle, &panel_cfg, out_panel));

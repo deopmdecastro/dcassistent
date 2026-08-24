@@ -70,7 +70,7 @@ static const dc_app_t s_apps[DC_APP_COUNT] = {
     { DC_APP_CONTROLO,      "Controlo",      LV_SYMBOL_PLAY },
     { DC_APP_MONITORIZACAO, "Monitorizacao", LV_SYMBOL_REFRESH },
     { DC_APP_ALARMES,       "Alarmes",       LV_SYMBOL_WARNING },
-    { DC_APP_AGENDA,        "Agenda",        LV_SYMBOL_CALENDAR },
+    { DC_APP_AGENDA,        "Agenda",        LV_SYMBOL_LIST },
     { DC_APP_MUSICA,        "Musica",        LV_SYMBOL_PAUSE },
     { DC_APP_LOJA,          "Loja",          LV_SYMBOL_DOWNLOAD },
     { DC_APP_DEFINICOES,    "Definicoes",    LV_SYMBOL_SETTINGS },
@@ -107,6 +107,7 @@ static uint8_t s_brightness_pct = 80; /* espelha o valor inicial definido em lcd
 static void dc_ui_open_app(dc_app_id_t app);
 static void dc_ui_go_launcher(void);
 static void dc_ui_show_placeholder(const char *title);
+static void dc_ui_highlight_app(int idx);
 
 /* ------------------------------------------------------------------------ */
 /* Construção do ícone de aplicação no launcher                            */
@@ -131,7 +132,7 @@ static lv_obj_t *dc_ui_build_app_icon(lv_obj_t *parent, const dc_app_t *app)
     lv_obj_t *lbl_name = lv_label_create(parent);
     lv_label_set_text(lbl_name, app->name);
     lv_obj_set_style_text_color(lbl_name, DC_COLOR_TEXT, 0);
-    lv_obj_set_style_text_font(lbl_name, &lv_font_montserrat_10, 0);
+    lv_obj_set_style_text_font(lbl_name, &lv_font_montserrat_14, 0);
     lv_obj_set_style_text_align(lbl_name, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_width(lbl_name, 54);
     lv_obj_align_to(lbl_name, icon, LV_ALIGN_OUT_BOTTOM_MID, 0, 3);
@@ -271,7 +272,7 @@ static void dc_ui_build_back_header(lv_obj_t *screen, const char *title, lv_obj_
     lv_obj_t *lbl_hint = lv_label_create(screen);
     lv_label_set_text(lbl_hint, "Toque em " LV_SYMBOL_LEFT " ou toque longo no BOOT para voltar");
     lv_obj_set_style_text_color(lbl_hint, DC_COLOR_TEXT_DIM, 0);
-    lv_obj_set_style_text_font(lbl_hint, &lv_font_montserrat_10, 0);
+    lv_obj_set_style_text_font(lbl_hint, &lv_font_montserrat_14, 0);
     lv_obj_align(lbl_hint, LV_ALIGN_BOTTOM_MID, 0, -8);
 }
 
@@ -343,7 +344,7 @@ static void dc_ui_build_definicoes_screen(void)
     lv_obj_t *lbl_more = lv_label_create(s_scr_definicoes);
     lv_label_set_text(lbl_more, "Sistema, Rede, Seguranca e Hardware chegam na fase 0.3/0.4");
     lv_obj_set_style_text_color(lbl_more, DC_COLOR_TEXT_DIM, 0);
-    lv_obj_set_style_text_font(lbl_more, &lv_font_montserrat_10, 0);
+    lv_obj_set_style_text_font(lbl_more, &lv_font_montserrat_14, 0);
     lv_obj_align(lbl_more, LV_ALIGN_CENTER, 0, 40);
 }
 
