@@ -11,6 +11,7 @@ idf_component_register(
         "audio/audio_manager.c"
         "audio/audio_output.c"
         "audio/audio_input.c"
+        "net/web_server.c"
     INCLUDE_DIRS
         "."
     REQUIRES
@@ -21,4 +22,6 @@ idf_component_register(
         esp_wifi
         esp_netif
         esp_event
+        esp_http_server
+        spiffs
 )
