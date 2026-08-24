@@ -1,0 +1,15 @@
+[build]
+target = "xtensa-esp32s3-espidf"
+
+[target.xtensa-esp32s3-espidf]
+linker = "ldproxy"
+# Necessário para o allocator/heap do esp-idf-sys em builds "std".
+rustflags = ["--cfg", "espidf_time64"]
+
+[unstable]
+build-std = ["std", "panic_abort"]
+
+[env]
+MCU = "esp32s3"
+# Ajusta o caminho se o ESP-IDF instalado (via espup/esp-idf-tools) estiver noutro sítio.
+ESP_IDF_VERSION = "v5.3.1"
