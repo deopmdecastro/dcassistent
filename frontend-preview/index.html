@@ -505,6 +505,16 @@
       outline: none; border-color: var(--accent); background: var(--bg-elev-2);
       box-shadow: 0 0 0 3px rgba(167,139,250,0.15);
     }
+    textarea.dc-input {
+      background: var(--bg-elev); color: var(--text);
+      border: 1px solid var(--stroke); border-radius: var(--r-sm);
+      font-size: 12px; font-family: inherit; line-height: 1.5;
+      transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+    }
+    textarea.dc-input:focus {
+      outline: none; border-color: var(--accent); background: var(--bg-elev-2);
+      box-shadow: 0 0 0 3px rgba(167,139,250,0.15);
+    }
 
     /* ---------- Custom Select (padronizado) ----------
        O `<select class="dc-select">` original fica escondido; um
@@ -1708,7 +1718,12 @@
     ================================================================ */
     function renderApp(id) {
       const body = document.getElementById('app-body');
-      if (id.startsWith('store_')) { renderComingSoon(id.slice(6)); return; }
+      if (id.startsWith('store_')) {
+        const appId = id.slice(6);
+        body.innerHTML = '';
+        if (STORE_RENDERERS[appId]) { STORE_RENDERERS[appId](); return; }
+        renderComingSoon(appId); return;
+      }
       const renderers = {
         assistant: renderAssistant, controlo: renderControlo, monitorizacao: renderMonitorizacao,
         alarmes: renderAlarmes, agenda: renderAgenda, musica: renderMusica,
@@ -2187,10 +2202,453 @@
       } else {
         storeInstalled.add(id); saveStore(); 
         if (btn) { btn.textContent = 'Remover'; btn.classList.add('ghost'); }
-        toast({ type:'ok', title:'Instalada', message:`${app.name} — em breve disponível` });
+        const funcional = !!STORE_RENDERERS[id];
+        toast({ type:'ok', title:'Instalada', message:`${app.name}${funcional ? ' — pronta a usar' : ' — em breve'}` });
         renderLauncher();
       }
     }
+
+    /* ================================================================
+       APLICAÇÕES DA LOJA — funcionais
+       (clima/meteo, notas, chamadas, ficheiros, e-mail,
+        segurança, rega, relatórios)
+    ================================================================ */
+
+    /* ---------- Cabeçalho reutilizável de app da loja ---------- */
+    function storeAppHeader(appId, subtitle) {
+      const app = storeCatalog.find(a => a.id === appId) || STORE_FALLBACK.find(a => a.id === appId) || {};
+      return `
+        <div class="card" style="display:flex;align-items:center;gap:12px;padding:14px 16px">
+          <div class="app-icon" style="width:46px;height:46px;border-radius:14px;color:${app.color||'var(--accent)'};font-size:20px;flex:none"><i class="${app.icon||'fa-solid fa-cube'}"></i></div>
+          <div style="flex:1;min-width:0">
+            <h3 style="font-size:15px;font-weight:600">${app.name||appId}</h3>
+            <p class="muted" style="font-size:10px">${subtitle||app.desc||''}</p>
+          </div>
+          <span style="font-size:9px;font-weight:700;color:var(--ok);background:rgba(52,211,153,.14);border:1px solid rgba(52,211,153,.35);padding:3px 9px;border-radius:999px">ATIVA</span>
+        </div>`;
+    }
+
+    /* ---------- Persistência genérica ---------- */
+    const appStore = {
+      get(key, def) { try { return JSON.parse(localStorage.getItem('dc_app_' + key)) ?? def; } catch { return def; } },
+      set(key, val) { localStorage.setItem('dc_app_' + key, JSON.stringify(val)); },
+    };
+
+    /* ================= CLIMA / METEOROLOGIA ================= */
+    const CLIMA_CITIES = {
+      lisboa:  { name:'Lisboa',  temp:24, cond:'Céu limpo',        icon:'fa-sun',         hum:52, wind:14, uv:6, feels:25, min:17, max:27 },
+      porto:   { name:'Porto',   temp:19, cond:'Parcialmente nublado', icon:'fa-cloud-sun', hum:64, wind:22, uv:4, feels:19, min:14, max:22 },
+      faro:    { name:'Faro',    temp:28, cond:'Sol forte',         icon:'fa-sun',         hum:44, wind:11, uv:8, feels:30, min:20, max:31 },
+      coimbra: { name:'Coimbra', temp:21, cond:'Aguaceiros',        icon:'fa-cloud-rain',  hum:78, wind:9,  uv:3, feels:21, min:15, max:23 },
+      braga:   { name:'Braga',   temp:18, cond:'Nublado',           icon:'fa-cloud',       hum:71, wind:16, uv:3, feels:17, min:13, max:20 },
+    };
+    let climaCity = appStore.get('clima_city', 'lisboa');
+    function renderClima() {
+      const c = CLIMA_CITIES[climaCity] || CLIMA_CITIES.lisboa;
+      const days = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+      const today = new Date().getDay();
+      const forecast = Array.from({length:5}, (_,i) => {
+        const t = c.max - i + (i%2? -2:1);
+        const icons = ['fa-sun','fa-cloud-sun','fa-cloud','fa-cloud-rain','fa-cloud-sun'];
+        return { d: days[(today+i)%7], hi: t, lo: t-7, ic: icons[i%icons.length] };
+      });
+      const hours = Array.from({length:6}, (_,i) => {
+        const h = (new Date().getHours() + i*2) % 24;
+        return { h: String(h).padStart(2,'0')+'h', t: c.temp - Math.round(Math.sin(i)* 3), ic: i%2? 'fa-cloud-sun':'fa-sun' };
+      });
+      const body = document.getElementById('app-body');
+      body.innerHTML = `
+        ${storeAppHeader('clima', 'Meteorologia local')}
+        <div class="card" style="text-align:center;background:linear-gradient(135deg,rgba(76,201,240,.14),rgba(124,58,237,.10))">
+          <div class="row" style="justify-content:center;gap:8px;margin-bottom:6px">
+            <i class="fa-solid fa-location-dot" style="color:var(--accent-cyan);font-size:12px"></i>
+            <select class="dc-select" onchange="climaCity=this.value;appStore.set('clima_city',climaCity);renderClima()">
+              ${Object.keys(CLIMA_CITIES).map(k=>`<option value="${k}" ${k===climaCity?'selected':''}>${CLIMA_CITIES[k].name}</option>`).join('')}
+            </select>
+          </div>
+          <i class="fa-solid ${c.icon}" style="font-size:52px;color:#4cc9f0;filter:drop-shadow(0 0 16px rgba(76,201,240,.4));margin:6px 0"></i>
+          <div style="font-size:44px;font-weight:700;line-height:1">${c.temp}°</div>
+          <p class="muted" style="font-size:12px;margin-top:2px">${c.cond} · sensação ${c.feels}°</p>
+          <p class="muted" style="font-size:11px">↑ ${c.max}°  ↓ ${c.min}°</p>
+        </div>
+        <div class="card"><div class="card-title"><strong>Ao longo do dia</strong></div>
+          <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px">
+            ${hours.map(h=>`<div style="flex:none;text-align:center;min-width:52px;padding:8px 4px;background:var(--bg-elev);border:1px solid var(--stroke);border-radius:12px">
+              <div class="muted" style="font-size:10px">${h.h}</div>
+              <i class="fa-solid ${h.ic}" style="color:#4cc9f0;font-size:16px;margin:6px 0"></i>
+              <div style="font-size:13px;font-weight:600">${h.t}°</div></div>`).join('')}
+          </div>
+        </div>
+        <div class="card"><div class="card-title"><strong>Próximos 5 dias</strong></div>
+          ${forecast.map(f=>`<div class="row" style="margin:0;padding:7px 0">
+            <span style="width:38px;font-weight:600">${f.d}</span>
+            <i class="fa-solid ${f.ic}" style="color:#4cc9f0;font-size:15px;flex:1;text-align:left"></i>
+            <span class="muted" style="font-size:12px">${f.lo}°</span>
+            <div style="flex:none;width:70px;height:5px;background:var(--stroke);border-radius:999px;margin:0 8px;overflow:hidden"><div style="height:100%;width:${(f.hi-f.lo)*6}%;background:linear-gradient(90deg,#4cc9f0,#f472b6)"></div></div>
+            <span style="font-size:12px;font-weight:600">${f.hi}°</span></div>`).join('')}
+        </div>
+        <div class="card"><div class="card-title"><strong>Detalhes</strong></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            ${[['fa-droplet','Humidade',c.hum+'%'],['fa-wind','Vento',c.wind+' km/h'],['fa-sun','Índice UV',c.uv+' / 11'],['fa-temperature-half','Sensação',c.feels+'°']].map(([ic,l,v])=>`
+              <div style="padding:10px 12px;background:var(--bg-elev);border:1px solid var(--stroke);border-radius:12px">
+                <div class="muted" style="font-size:10px"><i class="fa-solid ${ic}" style="margin-right:5px;color:var(--accent-cyan)"></i>${l}</div>
+                <div style="font-size:16px;font-weight:600;margin-top:3px">${v}</div></div>`).join('')}
+          </div>
+        </div>`;
+    }
+
+    /* ================= NOTAS ================= */
+    let notas = appStore.get('notas', [
+      { id:1, t:'Bem-vindo às Notas', b:'Cria, edita e apaga notas. Tudo fica guardado no dispositivo.', c:'#a78bfa', ts:Date.now() },
+      { id:2, t:'Lista de compras', b:'Leite, pão, café, fruta', c:'#4cc9f0', ts:Date.now()-86400000 },
+    ]);
+    const saveNotas = () => appStore.set('notas', notas);
+    const NOTE_COLORS = ['#a78bfa','#4cc9f0','#f472b6','#fbbf24','#34d399','#f87171'];
+    function renderNotas() {
+      const body = document.getElementById('app-body');
+      body.innerHTML = `
+        ${storeAppHeader('notas', notas.length + ' nota(s)')}
+        <div class="card"><div class="row" style="gap:8px">
+          <button class="btn sm" style="flex:1" onclick="editNota()"><i class="fa-solid fa-plus"></i> Nova nota</button>
+        </div></div>
+        <div id="notas-list"></div>`;
+      renderNotasList();
+    }
+    function renderNotasList() {
+      const el = document.getElementById('notas-list');
+      if (!el) return;
+      if (!notas.length) { el.innerHTML = '<div class="card muted" style="text-align:center">Sem notas. Cria a primeira!</div>'; return; }
+      el.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        ${notas.map(n=>`
+          <div style="background:linear-gradient(160deg,${n.c}22,var(--bg-elev));border:1px solid ${n.c}44;border-radius:14px;padding:12px;cursor:pointer;position:relative" onclick="editNota(${n.id})">
+            <div style="font-size:12px;font-weight:600;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n.t||'Sem título'}</div>
+            <div class="muted" style="font-size:10px;line-height:1.4;max-height:44px;overflow:hidden">${(n.b||'').replace(/</g,'&lt;')}</div>
+            <button class="btn ghost sm" style="position:absolute;top:6px;right:6px;width:24px;height:24px;padding:0;color:var(--err)" onclick="event.stopPropagation();delNota(${n.id})"><i class="fa-solid fa-trash" style="font-size:10px"></i></button>
+          </div>`).join('')}
+      </div>`;
+    }
+    function editNota(id) {
+      const n = notas.find(x=>x.id===id) || { id:null, t:'', b:'', c:NOTE_COLORS[Math.floor(Math.random()*NOTE_COLORS.length)] };
+      const body = document.getElementById('app-body');
+      body.innerHTML = `
+        ${storeAppHeader('notas', id?'Editar nota':'Nova nota')}
+        <div class="card">
+          <input class="dc-input" id="nota-t" value="${(n.t||'').replace(/"/g,'&quot;')}" placeholder="Título" style="width:100%;max-width:none;margin-bottom:10px;font-weight:600">
+          <textarea class="dc-input" id="nota-b" placeholder="Escreve aqui..." style="width:100%;max-width:none;min-height:140px;resize:vertical;padding:10px">${(n.b||'').replace(/</g,'&lt;')}</textarea>
+          <div class="row" style="gap:8px;margin-top:10px"><span class="muted" style="font-size:11px">Cor</span>
+            ${NOTE_COLORS.map(c=>`<span onclick="this.parentNode.querySelectorAll('span[data-c]').forEach(x=>x.style.outline='none');this.style.outline='2px solid #fff';window._notaColor='${c}'" data-c="${c}" style="width:22px;height:22px;border-radius:50%;background:${c};cursor:pointer;${c===n.c?'outline:2px solid #fff':''}"></span>`).join('')}
+          </div>
+          <div class="row" style="gap:8px;margin-top:14px">
+            <button class="btn ghost sm" style="flex:1" onclick="openApp('store_notas')">Cancelar</button>
+            <button class="btn sm" style="flex:1" onclick="saveNota(${n.id})"><i class="fa-solid fa-check"></i> Guardar</button>
+          </div>
+        </div>`;
+      window._notaColor = n.c;
+    }
+    function saveNota(id) {
+      const t = document.getElementById('nota-t').value.trim();
+      const b = document.getElementById('nota-b').value.trim();
+      const c = window._notaColor || '#a78bfa';
+      if (!t && !b) { toast({type:'warn',title:'Nota vazia'}); return; }
+      if (id) { const n = notas.find(x=>x.id===id); Object.assign(n,{t,b,c,ts:Date.now()}); }
+      else notas.unshift({ id:Date.now(), t, b, c, ts:Date.now() });
+      saveNotas(); toast({type:'ok',title:'Nota guardada'}); openApp('store_notas');
+    }
+    function delNota(id) {
+      showModal({type:'warn',title:'Apagar nota?',message:'Esta ação é permanente.',actions:[
+        {label:'Cancelar',style:'ghost'},
+        {label:'Apagar',style:'err',onClick:()=>{notas=notas.filter(x=>x.id!==id);saveNotas();renderNotasList();document.querySelector('#app-body .card p, #app-body .card small');const h=document.querySelector('#app-body .card');toast({type:'ok',title:'Nota apagada'});renderNotas();}}
+      ]});
+    }
+
+    /* ================= CHAMADAS ================= */
+    const contactos = appStore.get('contactos', [
+      { id:1, name:'Ana Silva',    num:'+351 912 345 678', fav:true },
+      { id:2, name:'Bruno Costa',  num:'+351 933 111 222', fav:false },
+      { id:3, name:'Carla Dias',   num:'+351 961 777 888', fav:true },
+      { id:4, name:'Diogo Melo',   num:'+351 917 000 555', fav:false },
+    ]);
+    let chamadasHist = appStore.get('chamadas_hist', [
+      { id:1, name:'Ana Silva', tipo:'recebida', h:'Hoje 14:20' },
+      { id:2, name:'Desconhecido', num:'+351 210 000 000', tipo:'perdida', h:'Hoje 09:05' },
+      { id:3, name:'Bruno Costa', tipo:'efetuada', h:'Ontem 18:44' },
+    ]);
+    const saveChamadas = () => appStore.set('chamadas_hist', chamadasHist);
+    let chamadasTab = 'contactos';
+    function renderChamadas() {
+      const body = document.getElementById('app-body');
+      body.innerHTML = `
+        ${storeAppHeader('chamadas', 'Contactos e chamadas')}
+        <div class="app-tabs">
+          <button class="tab-btn ${chamadasTab==='contactos'?'active':''}" onclick="chamadasTab='contactos';renderChamadas()">Contactos</button>
+          <button class="tab-btn ${chamadasTab==='historico'?'active':''}" onclick="chamadasTab='historico';renderChamadas()">Histórico</button>
+          <button class="tab-btn ${chamadasTab==='teclado'?'active':''}" onclick="chamadasTab='teclado';renderChamadas()">Teclado</button>
+        </div>
+        <div id="cham-panel"></div>`;
+      const p = document.getElementById('cham-panel');
+      if (chamadasTab==='contactos') {
+        const favs = contactos.filter(c=>c.fav);
+        p.innerHTML = `
+          ${favs.length?`<div class="card"><div class="card-title"><strong>Favoritos</strong></div>
+            ${favs.map(c=>chamadaRow(c)).join('')}</div>`:''}
+          <div class="card"><div class="card-title"><strong>Todos</strong><small>${contactos.length}</small></div>
+            ${contactos.map(c=>chamadaRow(c)).join('')}</div>`;
+      } else if (chamadasTab==='historico') {
+        const ic = { recebida:['fa-arrow-down-left','var(--ok)'], perdida:['fa-phone-slash','var(--err)'], efetuada:['fa-arrow-up-right','var(--accent-cyan)'] };
+        p.innerHTML = `<div class="card"><div class="card-title"><strong>Recentes</strong></div>
+          ${chamadasHist.map(h=>`<div class="row" style="margin:0;padding:8px 0">
+            <i class="fa-solid ${ic[h.tipo][0]}" style="color:${ic[h.tipo][1]};width:20px"></i>
+            <div class="row-label" style="flex:1"><strong>${h.name}</strong><small>${h.num||''} · ${h.h}</small></div>
+            <button class="btn ghost sm" style="width:32px;padding:0" onclick="fazerChamada('${h.name}')"><i class="fa-solid fa-phone"></i></button>
+          </div>`).join('')}
+        </div>`;
+      } else {
+        p.innerHTML = `<div class="card" style="text-align:center">
+          <div id="dial-display" style="font-size:26px;font-weight:600;letter-spacing:2px;min-height:34px;margin-bottom:12px">${window._dial||''}</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:240px;margin:0 auto">
+            ${['1','2','3','4','5','6','7','8','9','*','0','#'].map(k=>`<button class="btn ghost" style="aspect-ratio:1;font-size:20px;border-radius:50%" onclick="dialPress('${k}')">${k}</button>`).join('')}
+          </div>
+          <div class="row" style="justify-content:center;gap:14px;margin-top:14px">
+            <button class="btn ghost sm" style="width:44px;height:44px;border-radius:50%" onclick="dialDel()"><i class="fa-solid fa-delete-left"></i></button>
+            <button class="btn" style="width:56px;height:56px;border-radius:50%;background:var(--ok);font-size:20px" onclick="fazerChamada(window._dial||'número')"><i class="fa-solid fa-phone"></i></button>
+          </div>
+        </div>`;
+      }
+    }
+    function chamadaRow(c) {
+      return `<div class="row" style="margin:0;padding:8px 0">
+        <div style="width:34px;height:34px;border-radius:50%;background:var(--accent-2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">${c.name.charAt(0)}</div>
+        <div class="row-label" style="flex:1"><strong>${c.name}</strong><small>${c.num}</small></div>
+        <i class="fa-solid fa-star" style="color:${c.fav?'var(--warn)':'var(--stroke-strong)'};cursor:pointer" onclick="toggleFav(${c.id})"></i>
+        <button class="btn ghost sm" style="width:32px;padding:0;margin-left:8px" onclick="fazerChamada('${c.name}')"><i class="fa-solid fa-phone"></i></button>
+      </div>`;
+    }
+    function toggleFav(id){ const c=contactos.find(x=>x.id===id); c.fav=!c.fav; appStore.set('contactos',contactos); renderChamadas(); }
+    function dialPress(k){ window._dial=(window._dial||'')+k; const d=document.getElementById('dial-display'); if(d)d.textContent=window._dial; }
+    function dialDel(){ window._dial=(window._dial||'').slice(0,-1); const d=document.getElementById('dial-display'); if(d)d.textContent=window._dial; }
+    function fazerChamada(name){
+      showModal({type:'ok',title:'A ligar...',message:name,actions:[{label:'Terminar',style:'err',onClick:()=>{
+        chamadasHist.unshift({id:Date.now(),name,tipo:'efetuada',h:'Agora'}); saveChamadas();
+        toast({type:'info',title:'Chamada terminada',message:name});
+        if(chamadasTab==='historico')renderChamadas();
+      }}]});
+    }
+
+    /* ================= FICHEIROS ================= */
+    const fileTree = {
+      Documentos: [
+        {n:'relatorio_2024.pdf', s:'420 KB', ic:'fa-file-pdf', c:'#f87171'},
+        {n:'notas_reuniao.txt', s:'8 KB', ic:'fa-file-lines', c:'#94a3b8'},
+        {n:'orçamento.xlsx', s:'56 KB', ic:'fa-file-excel', c:'#34d399'},
+      ],
+      Imagens: [
+        {n:'paisagem.jpg', s:'2.1 MB', ic:'fa-file-image', c:'#4cc9f0'},
+        {n:'captura_ecra.png', s:'340 KB', ic:'fa-file-image', c:'#4cc9f0'},
+        {n:'logo_dc.svg', s:'12 KB', ic:'fa-file-image', c:'#a78bfa'},
+      ],
+      Música: [
+        {n:'blinding_lights.mp3', s:'5.4 MB', ic:'fa-file-audio', c:'#1DB954'},
+        {n:'playlist.m3u', s:'2 KB', ic:'fa-file-audio', c:'#1DB954'},
+      ],
+      Sistema: [
+        {n:'config.json', s:'4 KB', ic:'fa-file-code', c:'#fbbf24'},
+        {n:'firmware.bin', s:'1.8 MB', ic:'fa-microchip', c:'#f472b6'},
+      ],
+    };
+    let ficheirosFolder = null;
+    function renderFicheiros() {
+      const body = document.getElementById('app-body');
+      if (!ficheirosFolder) {
+        body.innerHTML = `
+          ${storeAppHeader('ficheiros', 'Gestão de ficheiros')}
+          <div class="card"><div class="card-title"><strong>Armazenamento</strong><small>1.2 GB / 4 GB</small></div>
+            <div style="height:8px;background:var(--stroke);border-radius:999px;overflow:hidden"><div style="height:100%;width:30%;background:linear-gradient(90deg,var(--accent),var(--accent-cyan))"></div></div>
+          </div>
+          <div class="card"><div class="card-title"><strong>Pastas</strong></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              ${Object.keys(fileTree).map(f=>`<div style="padding:14px;background:var(--bg-elev);border:1px solid var(--stroke);border-radius:14px;cursor:pointer;text-align:center" onclick="ficheirosFolder='${f}';renderFicheiros()">
+                <i class="fa-solid fa-folder" style="font-size:26px;color:var(--warn)"></i>
+                <div style="font-size:12px;font-weight:600;margin-top:6px">${f}</div>
+                <div class="muted" style="font-size:9px">${fileTree[f].length} itens</div></div>`).join('')}
+            </div>
+          </div>`;
+      } else {
+        const files = fileTree[ficheirosFolder];
+        body.innerHTML = `
+          ${storeAppHeader('ficheiros', ficheirosFolder)}
+          <div class="card"><div class="row" style="margin:0;cursor:pointer" onclick="ficheirosFolder=null;renderFicheiros()">
+            <i class="fa-solid fa-arrow-left" style="color:var(--accent)"></i><span style="margin-left:8px;font-weight:600">${ficheirosFolder}</span></div></div>
+          <div class="card">
+            ${files.map((f,i)=>`<div class="row" style="margin:0;padding:9px 0;${i>0?'border-top:1px solid var(--stroke)':''};cursor:pointer" onclick="toast({type:'info',title:'A abrir',message:'${f.n}'})">
+              <i class="fa-solid ${f.ic}" style="color:${f.c};font-size:18px;width:24px"></i>
+              <div class="row-label" style="flex:1"><strong style="font-weight:500">${f.n}</strong><small>${f.s}</small></div>
+              <button class="btn ghost sm" style="width:30px;padding:0;color:var(--err)" onclick="event.stopPropagation();toast({type:'ok',title:'Ficheiro apagado',message:'${f.n}'})"><i class="fa-solid fa-trash" style="font-size:11px"></i></button>
+            </div>`).join('')}
+          </div>`;
+      }
+    }
+
+    /* ================= E-MAIL ================= */
+    let emails = appStore.get('emails', [
+      { id:1, from:'Equipa DC', subj:'Bem-vindo ao DC OS', body:'Obrigado por usares a assistente DC. Explora as novas aplicações da loja!', h:'09:12', lida:false, cor:'#a78bfa' },
+      { id:2, from:'Spotify', subj:'A tua semana em música', body:'Descobre o teu resumo semanal e novas recomendações.', h:'Ontem', lida:false, cor:'#1DB954' },
+      { id:3, from:'Agenda', subj:'Lembrete: Reunião 15:00', body:'Tens uma reunião de manutenção preventiva agendada para hoje.', h:'Ontem', lida:true, cor:'#fbbf24' },
+      { id:4, from:'Segurança', subj:'Relatório de acesso', body:'Nenhuma atividade suspeita detetada nas últimas 24h.', h:'2ª feira', lida:true, cor:'#f87171' },
+    ]);
+    const saveEmails = () => appStore.set('emails', emails);
+    let emailOpen = null;
+    function renderEmail() {
+      const body = document.getElementById('app-body');
+      if (emailOpen) {
+        const e = emails.find(x=>x.id===emailOpen);
+        body.innerHTML = `
+          ${storeAppHeader('email','Mensagem')}
+          <div class="card"><div class="row" style="margin:0;cursor:pointer" onclick="emailOpen=null;renderEmail()"><i class="fa-solid fa-arrow-left" style="color:var(--accent)"></i><span style="margin-left:8px;font-weight:600">Caixa de entrada</span></div></div>
+          <div class="card">
+            <h3 style="font-size:15px;font-weight:600;margin-bottom:8px">${e.subj}</h3>
+            <div class="row" style="margin:0;padding-bottom:10px;border-bottom:1px solid var(--stroke)">
+              <div style="width:34px;height:34px;border-radius:50%;background:${e.cor};display:flex;align-items:center;justify-content:center;font-weight:700">${e.from.charAt(0)}</div>
+              <div class="row-label" style="flex:1"><strong>${e.from}</strong><small>${e.h}</small></div></div>
+            <p style="font-size:12px;line-height:1.6;color:var(--text-dim);margin-top:12px">${e.body}</p>
+            <div class="row" style="gap:8px;margin-top:16px">
+              <button class="btn ghost sm" style="flex:1" onclick="toast({type:'info',title:'Responder',message:'Em breve'})"><i class="fa-solid fa-reply"></i> Responder</button>
+              <button class="btn ghost sm" style="color:var(--err)" onclick="emails=emails.filter(x=>x.id!==${e.id});saveEmails();emailOpen=null;renderEmail();toast({type:'ok',title:'E-mail apagado'})"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>`;
+        return;
+      }
+      const naoLidas = emails.filter(e=>!e.lida).length;
+      body.innerHTML = `
+        ${storeAppHeader('email', naoLidas + ' não lida(s)')}
+        <div class="card">
+          ${emails.length? emails.map((e,i)=>`<div class="row" style="margin:0;padding:10px 0;${i>0?'border-top:1px solid var(--stroke)':''};cursor:pointer" onclick="emailOpen=${e.id};emails.find(x=>x.id===${e.id}).lida=true;saveEmails();renderEmail()">
+            <div style="width:8px;height:8px;border-radius:50%;background:${e.lida?'transparent':'var(--accent)'};flex:none"></div>
+            <div style="width:32px;height:32px;border-radius:50%;background:${e.cor};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex:none">${e.from.charAt(0)}</div>
+            <div class="row-label" style="flex:1;min-width:0"><strong style="${e.lida?'font-weight:400':''}">${e.from}</strong><small style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.subj}</small></div>
+            <span class="muted" style="font-size:9px;flex:none">${e.h}</span>
+          </div>`).join('') : '<p class="muted" style="text-align:center">Caixa de entrada vazia.</p>'}
+        </div>`;
+    }
+
+    /* ================= SEGURANÇA ================= */
+    const secState = appStore.get('sec_state', { armado:false });
+    const cameras = [
+      { n:'Entrada', on:true },  { n:'Garagem', on:true },
+      { n:'Jardim', on:false },  { n:'Interior', on:true },
+    ];
+    const sensores = [
+      { n:'Porta principal', ic:'fa-door-closed', st:'Fechada', ok:true },
+      { n:'Janela sala', ic:'fa-window-maximize', st:'Fechada', ok:true },
+      { n:'Movimento', ic:'fa-person-walking', st:'Sem atividade', ok:true },
+      { n:'Fumo', ic:'fa-fire', st:'Normal', ok:true },
+    ];
+    function renderSeguranca() {
+      const body = document.getElementById('app-body');
+      body.innerHTML = `
+        ${storeAppHeader('seguranca', 'Câmaras e sensores')}
+        <div class="card" style="text-align:center;background:${secState.armado?'linear-gradient(135deg,rgba(248,113,113,.16),rgba(124,58,237,.08))':'var(--bg-elev)'}">
+          <i class="fa-solid ${secState.armado?'fa-shield-halved':'fa-shield'}" style="font-size:40px;color:${secState.armado?'var(--err)':'var(--text-mute)'};margin-bottom:8px"></i>
+          <h3 style="font-size:16px;font-weight:600">Sistema ${secState.armado?'ARMADO':'desarmado'}</h3>
+          <p class="muted" style="font-size:11px;margin:4px 0 12px">${secState.armado?'Todos os sensores em vigilância':'Vigilância desativada'}</p>
+          <button class="btn ${secState.armado?'':'err'}" style="min-width:140px" onclick="secState.armado=!secState.armado;appStore.set('sec_state',secState);renderSeguranca();toast({type:secState.armado?'warn':'ok',title:secState.armado?'Sistema armado':'Sistema desarmado'})">
+            <i class="fa-solid fa-power-off"></i> ${secState.armado?'Desarmar':'Armar'}</button>
+        </div>
+        <div class="card"><div class="card-title"><strong>Câmaras</strong><small>${cameras.filter(c=>c.on).length}/${cameras.length} ativas</small></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            ${cameras.map((c,i)=>`<div style="border-radius:12px;overflow:hidden;border:1px solid var(--stroke);background:#000">
+              <div style="aspect-ratio:16/10;background:${c.on?'repeating-linear-gradient(0deg,#0a0716,#0a0716 2px,#111 3px)':'var(--bg-deep)'};position:relative;display:flex;align-items:center;justify-content:center">
+                ${c.on?`<i class="fa-solid fa-video" style="color:var(--text-mute);font-size:20px"></i><span style="position:absolute;top:5px;left:6px;font-size:8px;color:var(--err)"><i class="fa-solid fa-circle" style="font-size:6px;animation:pulse 1.5s infinite"></i> REC</span>`:`<i class="fa-solid fa-video-slash" style="color:var(--text-mute);font-size:20px"></i>`}
+              </div>
+              <div style="padding:6px 8px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:10px;font-weight:600">${c.n}</span>
+                <label class="switch" style="transform:scale(.7)"><input type="checkbox" ${c.on?'checked':''} onchange="cameras[${i}].on=this.checked;renderSeguranca()"><span class="slider-toggle"></span></label></div>
+            </div>`).join('')}
+          </div>
+        </div>
+        <div class="card"><div class="card-title"><strong>Sensores</strong></div>
+          ${sensores.map(s=>`<div class="row" style="margin:0;padding:8px 0">
+            <i class="fa-solid ${s.ic}" style="color:${s.ok?'var(--ok)':'var(--err)'};width:22px"></i>
+            <div class="row-label" style="flex:1"><strong style="font-weight:500">${s.n}</strong></div>
+            <span style="font-size:11px;color:${s.ok?'var(--ok)':'var(--err)'}">${s.st}</span></div>`).join('')}
+        </div>`;
+    }
+
+    /* ================= REGA ================= */
+    const regaZonas = appStore.get('rega_zonas', [
+      { id:1, n:'Relvado frente', on:false, dur:15, hum:38 },
+      { id:2, n:'Canteiro flores', on:true,  dur:10, hum:62 },
+      { id:3, n:'Horta', on:false, dur:20, hum:45 },
+      { id:4, n:'Vasos varanda', on:false, dur:5, hum:71 },
+    ]);
+    const saveRega = () => appStore.set('rega_zonas', regaZonas);
+    function renderRega() {
+      const body = document.getElementById('app-body');
+      const ativas = regaZonas.filter(z=>z.on).length;
+      body.innerHTML = `
+        ${storeAppHeader('rega', 'Controlo de rega inteligente')}
+        <div class="card" style="text-align:center;background:linear-gradient(135deg,rgba(76,201,240,.14),rgba(52,211,153,.08))">
+          <i class="fa-solid fa-droplet" style="font-size:38px;color:#4cc9f0;filter:drop-shadow(0 0 12px rgba(76,201,240,.4))"></i>
+          <h3 style="font-size:16px;font-weight:600;margin-top:6px">${ativas} zona(s) a regar</h3>
+          <p class="muted" style="font-size:11px">Consumo estimado hoje: ${(ativas*2.4).toFixed(1)} L/min</p>
+          <div class="row" style="justify-content:center;gap:8px;margin-top:12px">
+            <button class="btn sm" onclick="regaZonas.forEach(z=>z.on=true);saveRega();renderRega();toast({type:'ok',title:'Todas as zonas ligadas'})"><i class="fa-solid fa-play"></i> Ligar todas</button>
+            <button class="btn ghost sm" onclick="regaZonas.forEach(z=>z.on=false);saveRega();renderRega();toast({type:'info',title:'Rega parada'})"><i class="fa-solid fa-stop"></i> Parar</button>
+          </div>
+        </div>
+        <div class="card"><div class="card-title"><strong>Zonas</strong></div>
+          ${regaZonas.map(z=>`<div class="row" style="margin:0;padding:10px 0;border-top:1px solid var(--stroke);flex-wrap:wrap">
+            <div class="row-label" style="flex:1"><strong>${z.n}</strong><small>Humidade do solo ${z.hum}% · ${z.dur} min</small></div>
+            <label class="switch"><input type="checkbox" ${z.on?'checked':''} onchange="regaZonas.find(x=>x.id===${z.id}).on=this.checked;saveRega();renderRega()"><span class="slider-toggle"></span></label>
+            <div style="width:100%;margin-top:6px;height:6px;background:var(--stroke);border-radius:999px;overflow:hidden"><div style="height:100%;width:${z.hum}%;background:${z.hum<40?'var(--warn)':'linear-gradient(90deg,#4cc9f0,#34d399)'}"></div></div>
+          </div>`).join('')}
+        </div>
+        <div class="card"><div class="card-title"><strong>Programação</strong></div>
+          <div class="row"><div class="row-label"><strong>Rega automática</strong><small>com base na humidade</small></div>
+            <label class="switch"><input type="checkbox" checked><span class="slider-toggle"></span></label></div>
+          <div class="row"><div class="row-label"><strong>Horário</strong></div><span class="muted">06:00 · 20:00</span></div>
+          <div class="row"><div class="row-label"><strong>Sensor de chuva</strong><small>pausa a rega se chover</small></div>
+            <label class="switch"><input type="checkbox" checked><span class="slider-toggle"></span></label></div>
+        </div>`;
+    }
+
+    /* ================= RELATÓRIOS ================= */
+    function renderRelatorios() {
+      const body = document.getElementById('app-body');
+      const bars = [62,74,58,81,69,90,77];
+      const days = ['S','T','Q','Q','S','S','D'];
+      body.innerHTML = `
+        ${storeAppHeader('relatorios', 'Relatórios do sistema')}
+        <div class="card"><div class="card-title"><strong>Resumo</strong><small>últimos 7 dias</small></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            ${[['fa-clock','Uptime','99.8%','var(--ok)'],['fa-microchip','CPU médio','34%','var(--accent-cyan)'],['fa-memory','RAM média','58%','var(--warn)'],['fa-bolt','Eventos','142','var(--accent)']].map(([ic,l,v,c])=>`
+              <div style="padding:12px;background:var(--bg-elev);border:1px solid var(--stroke);border-radius:12px">
+                <i class="fa-solid ${ic}" style="color:${c};font-size:15px"></i>
+                <div style="font-size:20px;font-weight:700;margin-top:6px">${v}</div>
+                <div class="muted" style="font-size:9px">${l}</div></div>`).join('')}
+          </div>
+        </div>
+        <div class="card"><div class="card-title"><strong>Atividade semanal</strong></div>
+          <div style="display:flex;align-items:flex-end;gap:10px;height:120px;padding-top:8px">
+            ${bars.map((b,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end">
+              <div style="width:100%;height:${b}%;background:linear-gradient(180deg,var(--accent),var(--accent-2));border-radius:6px 6px 0 0;position:relative">
+                <span style="position:absolute;top:-16px;left:0;right:0;text-align:center;font-size:9px;color:var(--text-dim)">${b}</span></div>
+              <span class="muted" style="font-size:10px">${days[i]}</span></div>`).join('')}
+          </div>
+        </div>
+        <div class="card"><div class="card-title"><strong>Registos recentes</strong></div>
+          ${[['fa-circle-check','var(--ok)','Backup concluído','há 2 h'],['fa-triangle-exclamation','var(--warn)','CPU acima de 80%','há 5 h'],['fa-circle-info','var(--accent-cyan)','Atualização verificada','há 8 h'],['fa-circle-check','var(--ok)','Sensores calibrados','ontem']].map(([ic,c,t,h])=>`
+            <div class="row" style="margin:0;padding:7px 0"><i class="fa-solid ${ic}" style="color:${c};width:20px"></i>
+              <div class="row-label" style="flex:1"><strong style="font-weight:500">${t}</strong></div>
+              <span class="muted" style="font-size:10px">${h}</span></div>`).join('')}
+        </div>
+        <div class="card"><button class="btn ghost sm" style="width:100%" onclick="toast({type:'ok',title:'Relatório exportado',message:'relatorio_semanal.pdf'})"><i class="fa-solid fa-file-export"></i> Exportar relatório</button></div>`;
+    }
+
+    /* ---------- Registo dos renderers da loja ---------- */
+    const STORE_RENDERERS = {
+      clima: renderClima, notas: renderNotas, chamadas: renderChamadas,
+      ficheiros: renderFicheiros, email: renderEmail, seguranca: renderSeguranca,
+      rega: renderRega, relatorios: renderRelatorios,
+    };
 
     /* -------- Ecrã "Em breve" para apps instaladas da loja -------- */
     function renderComingSoon(appId) {
@@ -2308,12 +2766,51 @@
           <div class="row"><button class="btn ghost sm" onclick="toast({type:'info',title:'Diagnóstico iniciado'})">Diagnóstico</button></div>`,
         'Aplicações': `
           <div class="row"><div class="row-label"><strong>Aplicações instaladas</strong></div><b>${APPS.length + storeInstalled.size}</b></div>
-          <div class="row"><div class="row-label"><strong>Permissões das aplicações</strong></div><button class="btn ghost sm" onclick="toast({type:'info',title:'Em breve'})">Gerir</button></div>
-          <div class="row"><div class="row-label"><strong>Notificações</strong></div><button class="btn ghost sm" onclick="toast({type:'info',title:'Em breve'})">Gerir</button></div>
+          <div class="row"><div class="row-label"><strong>Da loja</strong><small>${storeInstalled.size} instalada(s)</small></div>
+            <button class="btn ghost sm" onclick="openApp('loja')">Abrir loja</button></div>
+          <div class="row"><div class="row-label"><strong>Permissões das aplicações</strong></div><button class="btn ghost sm" onclick="openAppPermissions()">Gerir</button></div>
+          <div class="row"><div class="row-label"><strong>Notificações</strong></div><button class="btn ghost sm" onclick="openAppNotifications()">Gerir</button></div>
           <div class="row"><div class="row-label"><strong>Armazenamento</strong></div><span class="muted">1.2 GB livres</span></div>
-          <div class="row"><div class="row-label"><strong>Atualizações</strong></div><button class="btn ghost sm" onclick="toast({type:'ok',title:'Sistema atualizado'})">Verificar</button></div>`,
+          <div class="row"><div class="row-label"><strong>Atualizações</strong></div><button class="btn ghost sm" onclick="toast({type:'ok',title:'Sistema atualizado',message:'Estás na versão mais recente'})">Verificar</button></div>`,
       };
       panel.innerHTML = `<div class="card" style="margin-top:8px">${rows[setCat] || ''}</div>`;
+    }
+
+    /* -------- Permissões e notificações das aplicações -------- */
+    const APP_PERMS_KEY = 'dc_app_perms';
+    let appPerms = appStore.get('perms', { microfone:true, localizacao:true, camara:false, contactos:true, notificacoes:true });
+    function openAppPermissions() {
+      const items = [
+        ['microfone','Microfone','fa-microphone'], ['localizacao','Localização','fa-location-dot'],
+        ['camara','Câmara','fa-camera'], ['contactos','Contactos','fa-address-book'],
+        ['notificacoes','Notificações','fa-bell'],
+      ];
+      showModal({ type:'info', title:'Permissões', message:'Controla o acesso das aplicações.', actions:[{label:'Concluído',style:'ghost'}] });
+      // enriquecer o corpo do modal com toggles
+      const msg = document.getElementById('modal-msg');
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'margin-top:12px;text-align:left';
+      wrap.innerHTML = items.map(([k,l,ic])=>`
+        <div class="row" style="margin:0;padding:7px 0">
+          <i class="fa-solid ${ic}" style="color:var(--accent);width:22px"></i>
+          <div class="row-label" style="flex:1"><strong style="font-weight:500">${l}</strong></div>
+          <label class="switch"><input type="checkbox" ${appPerms[k]?'checked':''} onchange="appPerms['${k}']=this.checked;appStore.set('perms',appPerms)"><span class="slider-toggle"></span></label>
+        </div>`).join('');
+      msg.appendChild(wrap);
+    }
+    let appNotif = appStore.get('notif', { som:true, vibrar:false, prever:true, silencioNoite:true });
+    function openAppNotifications() {
+      const items = [['som','Som',''],['vibrar','Vibração',''],['prever','Pré-visualizar conteúdo',''],['silencioNoite','Silêncio noturno','22:00 – 07:00']];
+      showModal({ type:'info', title:'Notificações', message:'Preferências de notificações do sistema.', actions:[{label:'Concluído',style:'ghost'}] });
+      const msg = document.getElementById('modal-msg');
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'margin-top:12px;text-align:left';
+      wrap.innerHTML = items.map(([k,l,sub])=>`
+        <div class="row" style="margin:0;padding:7px 0">
+          <div class="row-label" style="flex:1"><strong style="font-weight:500">${l}</strong>${sub?`<small>${sub}</small>`:''}</div>
+          <label class="switch"><input type="checkbox" ${appNotif[k]?'checked':''} onchange="appNotif['${k}']=this.checked;appStore.set('notif',appNotif)"><span class="slider-toggle"></span></label>
+        </div>`).join('');
+      msg.appendChild(wrap);
     }
 
     /* ================================================================
