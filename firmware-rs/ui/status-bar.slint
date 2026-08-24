@@ -1,0 +1,45 @@
+// Barra de estado, presente em todos os ecrãs (Home + dentro de cada
+// app) — relógio, Wi-Fi, bateria. Valores vêm do Rust via propriedades
+// `in`, atualizados pelo loop principal em src/bin/dc_os.rs (sem lógica
+// de rede/bateria aqui, só apresentação).
+
+import { Theme } from "theme.slint";
+
+export component StatusBar inherits Rectangle {
+    in property <string> time-text: "--:--";
+    in property <bool> wifi-connected: false;
+    in property <int> battery-percent: 100;
+
+    height: 20px;
+    background: Theme.bg-surface;
+
+    HorizontalLayout {
+        padding-left: Theme.gap-md;
+        padding-right: Theme.gap-md;
+        spacing: Theme.gap-md;
+
+        Text {
+            text: time-text;
+            color: Theme.text-primary;
+            font-size: Theme.font-xs;
+            vertical-alignment: center;
+        }
+
+        Rectangle { }
+        // spacer
+
+        Text {
+            text: wifi-connected ? "📶" : "📴";
+            font-size: Theme.font-xs;
+            color: wifi-connected ? Theme.text-primary : Theme.text-disabled;
+            vertical-alignment: center;
+        }
+
+        Text {
+            text: battery-percent + "%";
+            font-size: Theme.font-xs;
+            color: battery-percent < 20 ? Theme.danger : Theme.text-secondary;
+            vertical-alignment: center;
+        }
+    }
+}

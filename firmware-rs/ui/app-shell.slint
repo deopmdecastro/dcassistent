@@ -1,0 +1,61 @@
+// Cabeçalho comum a todas as aplicações: botão "voltar" (regressa ao
+// launcher) + título + cor de acento da app. Cada app usa isto dentro do
+// seu próprio ecrã (ver ui/apps/*.slint) — mantém a navegação consistente
+// sem telas numeradas, conforme docs/interface-os.md secção 2.
+
+import { Theme } from "theme.slint";
+
+export component AppShell inherits Rectangle {
+    in property <string> title: "";
+    in property <color> accent: Theme.accent;
+    callback go-home();
+
+    background: Theme.bg-root;
+
+    VerticalLayout {
+        HorizontalLayout {
+            height: 32px;
+            padding: Theme.gap-sm;
+            spacing: Theme.gap-sm;
+
+            back-touch := TouchArea {
+                width: 40px;
+                clicked => { go-home(); }
+
+                Rectangle {
+                    border-radius: Theme.radius-sm;
+                    background: back-touch.pressed ? Theme.bg-tile-pressed : Theme.bg-tile;
+
+                    Text {
+                        text: "‹";
+                        font-size: 20px;
+                        color: Theme.text-primary;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+
+            Text {
+                text: title;
+                color: Theme.text-primary;
+                font-size: Theme.font-lg;
+                font-weight: 700;
+                vertical-alignment: center;
+            }
+
+            Rectangle {
+                height: 4px;
+                width: 4px;
+                border-radius: 2px;
+                background: accent;
+                y: (parent.height - self.height) / 2;
+            }
+        }
+
+        // Conteúdo específico de cada app entra aqui via `@children`.
+        content-area := Rectangle {
+            @children
+        }
+    }
+}

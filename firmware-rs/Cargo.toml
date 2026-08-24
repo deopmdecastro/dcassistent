@@ -12,8 +12,18 @@ authors = ["Zana <deopmdecastro>"]
 # O objetivo é migrar para Rust + esp-idf-hal + esp-idf-svc (Wi-Fi/rede)
 # como base para a UI em Slint (fase seguinte, docs/interface-os.md).
 
+[lib]
+name = "dc_firmware_rs"
+path = "src/lib.rs"
+
 [[bin]]
 name = "dc-firmware-rs"
+path = "src/main.rs"
+harness = false
+
+[[bin]]
+name = "dc-os"
+path = "src/bin/dc_os.rs"
 harness = false
 
 [profile.release]
@@ -43,5 +53,16 @@ display-interface-spi = "0.5"
 ws2812-esp32-rmt-driver = { version = "0.11", features = ["smart-leds-trait"] }
 smart-leds-trait = "0.3"
 
+# UI do sistema (fase 2) — só usada pelo binário `dc-os`, não pela
+# validação de hardware (`dc-firmware-rs`).
+slint = { version = "1.8", default-features = false, features = [
+    "compat-1-2",
+    "renderer-software",
+    "libm",
+    "unsafe-single-threaded",
+] }
+anyhow = "1"
+
 [build-dependencies]
 embuild = "0.32"
+slint-build = "1.8"

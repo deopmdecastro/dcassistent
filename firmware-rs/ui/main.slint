@@ -1,0 +1,89 @@
+// Janela raiz da DC. Composição: Launcher (Home) <-> uma app de cada vez.
+// Navegação por `current-app` (string; "" = Home) em vez de índice de
+// tela numerada — coerente com docs/interface-os.md secção 2.
+//
+// O Rust (src/bin/dc_os.rs) só conhece este ficheiro: define `current-app`
+// ao ouvir `open-app`, e volta a "" ao ouvir `go-home`. A lógica de cada
+// app (dados, comandos ao Gateway) fica nos handlers Rust correspondentes,
+// nunca dentro do .slint.
+
+import { Theme } from "theme.slint";
+import { Launcher } from "launcher.slint";
+import { ControloApp } from "apps/controlo.slint";
+import { MonitorizacaoApp } from "apps/monitorizacao.slint";
+import { DefinicoesApp } from "apps/definicoes.slint";
+
+export component MainWindow inherits Window {
+    width: 320px;
+    height: 240px;
+    background: Theme.bg-root;
+
+    // "" = Home. Caso contrário, id da app do App Registry
+    // (ui/app-registry.slint) — ex. "controlo", "monitorizacao".
+    in-out property <string> current-app: "";
+
+    // --- Estado partilhado (status bar) ---
+    in property <string> time-text: "--:--";
+    in property <bool> wifi-connected: false;
+    in property <int> battery-percent: 100;
+
+    // --- Estado específico de apps já implementadas nesta fase ---
+    in property <bool> controlo-system-on: false;
+    in property <bool> controlo-auto-mode: true;
+    callback controlo-toggle-power();
+    callback controlo-toggle-mode();
+
+    callback app-opened(string); // notifica o Rust para carregar dados da app
+
+    if current-app == "": Launcher {
+        time-text: root.time-text;
+        wifi-connected: root.wifi-connected;
+        battery-percent: root.battery-percent;
+        open-app(id) => {
+            root.current-app = id;
+            root.app-opened(id);
+        }
+    }
+
+    if current-app == "controlo": ControloApp {
+        system-on: root.controlo-system-on;
+        auto-mode: root.controlo-auto-mode;
+        go-home => { root.current-app = ""; }
+        toggle-power => { root.controlo-toggle-power(); }
+        toggle-mode => { root.controlo-toggle-mode(); }
+    }
+
+    if current-app == "monitorizacao": MonitorizacaoApp {
+        go-home => { root.current-app = ""; }
+    }
+
+    if current-app == "definicoes": DefinicoesApp {
+        go-home => { root.current-app = ""; }
+    }
+
+    // As restantes apps do registo (assistant, alarmes, agenda, musica,
+    // loja) ainda não têm ecrã próprio — placeholder simples até serem
+    // implementadas, para o launcher nunca abrir para um ecrã em branco.
+    if current-app != "" && current-app != "controlo" && current-app != "monitorizacao" && current-app != "definicoes": Rectangle {
+        background: Theme.bg-root;
+        VerticalLayout {
+            alignment: center;
+            spacing: Theme.gap-md;
+            Text {
+                text: "\"" + current-app + "\" — por implementar";
+                color: Theme.text-secondary;
+                horizontal-alignment: center;
+            }
+            back-touch := TouchArea {
+                height: 32px;
+                clicked => { root.current-app = ""; }
+                Text {
+                    text: "‹ Voltar";
+                    color: Theme.accent;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+}

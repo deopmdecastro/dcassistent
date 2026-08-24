@@ -16,9 +16,7 @@
 //! --release` + `espflash flash` numa máquina com `espup` instalado
 //! antes de ser considerado validado. Ver `firmware-rs/README.md`.
 
-mod display;
-mod pins;
-mod touch_ft6336g;
+use dc_firmware_rs::{display, pins, touch_ft6336g};
 
 use display_interface_spi::SPIInterface;
 use embedded_graphics::pixelcolor::Rgb565;

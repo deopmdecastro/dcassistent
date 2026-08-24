@@ -1,0 +1,76 @@
+// Ecrã inicial (Home/Desktop) — grelha de ícones de aplicações.
+// Não há navegação por número de tela: o utilizador toca num ícone e
+// `open-app(id)` é emitido para o Rust decidir o que mostrar
+// (docs/interface-os.md secção 2/3).
+
+import { Theme } from "theme.slint";
+import { AppRegistry, AppEntry } from "app-registry.slint";
+import { StatusBar } from "status-bar.slint";
+
+component AppIcon inherits Rectangle {
+    in property <AppEntry> app;
+    callback clicked();
+
+    width: 68px;
+    height: 68px;
+    border-radius: Theme.radius-lg;
+    background: touch.pressed ? Theme.bg-tile-pressed : Theme.bg-tile;
+    border-width: touch.pressed ? 0px : 1px;
+    border-color: app.accent.with-alpha(0.35);
+
+    touch := TouchArea {
+        clicked => { root.clicked(); }
+    }
+
+    VerticalLayout {
+        alignment: center;
+        spacing: Theme.gap-sm;
+
+        Text {
+            text: app.icon;
+            font-size: 26px;
+            horizontal-alignment: center;
+        }
+
+        Text {
+            text: app.name;
+            font-size: Theme.font-xs;
+            color: Theme.text-secondary;
+            horizontal-alignment: center;
+            overflow: elide;
+        }
+    }
+}
+
+export component Launcher inherits Rectangle {
+    in property <string> time-text: "--:--";
+    in property <bool> wifi-connected: false;
+    in property <int> battery-percent: 100;
+    callback open-app(string);
+
+    background: Theme.bg-root;
+
+    VerticalLayout {
+        StatusBar {
+            time-text: root.time-text;
+            wifi-connected: root.wifi-connected;
+            battery-percent: root.battery-percent;
+        }
+
+        Rectangle {
+            // Grelha 4x2 — 8 apps do registo, cabe confortavelmente em
+            // 320x(240-20) com espaçamento tocável.
+            GridLayout {
+                padding: Theme.gap-lg;
+                spacing: Theme.gap-lg;
+
+                for entry[i] in AppRegistry.apps: AppIcon {
+                    row: i / 4;
+                    col: i - (i / 4) * 4;
+                    app: entry;
+                    clicked => { root.open-app(entry.id); }
+                }
+            }
+        }
+    }
+}

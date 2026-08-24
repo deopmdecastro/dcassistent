@@ -1,0 +1,52 @@
+// App "Monitorização" — leituras em tempo real (docs/interface-os.md 5.3).
+// Valores vêm do Rust (Gateway/sensores); esta fase mostra estrutura +
+// dados de exemplo, sem gráficos ainda (fica para quando houver série
+// temporal real vinda do Gateway).
+
+import { Theme } from "../theme.slint";
+import { AppShell } from "../app-shell.slint";
+
+struct Reading {
+    label: string,
+    value: string,
+}
+
+export component MonitorizacaoApp inherits AppShell {
+    title: "Monitorização";
+    accent: #f5a623;
+
+    in property <[Reading]> readings: [
+        { label: "Temperatura", value: "--.-°C" },
+        { label: "Humidade", value: "--%" },
+        { label: "Equipamentos", value: "-- online" },
+    ];
+
+    VerticalLayout {
+        padding: Theme.gap-lg;
+        spacing: Theme.gap-md;
+
+        for r in readings: Rectangle {
+            height: 40px;
+            border-radius: Theme.radius-md;
+            background: Theme.bg-surface;
+
+            HorizontalLayout {
+                padding: Theme.gap-md;
+                Text {
+                    text: r.label;
+                    color: Theme.text-secondary;
+                    font-size: Theme.font-sm;
+                    vertical-alignment: center;
+                }
+                Rectangle { }
+                Text {
+                    text: r.value;
+                    color: Theme.text-primary;
+                    font-size: Theme.font-md;
+                    font-weight: 600;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+}
