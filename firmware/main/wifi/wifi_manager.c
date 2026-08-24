@@ -9,6 +9,7 @@
  */
 #include "wifi_manager.h"
 #include "storage/settings_manager.h"
+#include "net/web_server.h"
 
 #include "esp_wifi.h"
 #include "esp_event.h"
@@ -68,6 +69,9 @@ static void dc_wifi_event_handler(void *arg, esp_event_base_t event_base,
         case WIFI_EVENT_STA_DISCONNECTED: {
             wifi_event_sta_disconnected_t *evt = (wifi_event_sta_disconnected_t *)event_data;
             ESP_LOGW(TAG, "Desligado da rede (motivo=%d)", evt ? evt->reason : -1);
+            /* Se o servidor web estava a servir, pára-se: já não há IP. */
+            esp_ip4_addr_t zero = { 0 };
+            dc_web_server_notify_ip(false, zero);
             /* Reconexão controlada: não tenta imediatamente em loop apertado —
              * dc_wifi_try_reconnect incrementa o contador de tentativas. */
             dc_wifi_try_reconnect();
@@ -81,6 +85,8 @@ static void dc_wifi_event_handler(void *arg, esp_event_base_t event_base,
         ESP_LOGI(TAG, "Ligado, IP=" IPSTR, IP2STR(&evt->ip_info.ip));
         s_retry_count = 0;
         dc_wifi_set_state(DC_WIFI_STATE_CONNECTED);
+        /* Notifica o servidor web para começar a servir a UI DC OS. */
+        dc_web_server_notify_ip(true, evt->ip_info.ip);
     }
 }
 

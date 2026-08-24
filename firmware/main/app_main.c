@@ -18,6 +18,7 @@
 #include "storage/settings_manager.h"
 #include "wifi/wifi_manager.h"
 #include "audio/audio_manager.h"
+#include "net/web_server.h"
 
 #include "esp_log.h"
 #include "esp_heap_caps.h"
@@ -54,6 +55,13 @@ void app_main(void)
     if (audio_err != ESP_OK) {
         ESP_LOGW(TAG, "Áudio em modo degradado (%s) — DC continua a funcionar sem som",
                  esp_err_to_name(audio_err));
+    }
+
+    /* Web server (HTTP + WS) — arranca em espera pela ligação Wi-Fi. */
+    esp_err_t web_err = dc_web_server_init();
+    if (web_err != ESP_OK) {
+        ESP_LOGW(TAG, "Web server inicializacao com aviso (%s) — UI web pode ficar indisponivel",
+                 esp_err_to_name(web_err));
     }
 
     esp_err_t wifi_err = dc_wifi_manager_start(dc_on_wifi_state_changed);

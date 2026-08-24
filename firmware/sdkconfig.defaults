@@ -1,4 +1,4 @@
-# DC V1 — ES3N28P (ESP32-S3, 16MB flash / 8MB PSRAM octal)
+# DC V1 — ES3C28P (ESP32-S3, 16MB flash / 8MB PSRAM octal)
 # Ver docs/firmware-architecture.md secção 12 para o racional destes valores.
 
 CONFIG_IDF_TARGET="esp32s3"
@@ -19,6 +19,11 @@ CONFIG_LV_MEM_CUSTOM=y
 
 # Wi-Fi (usado a partir da fase 0.3)
 CONFIG_ESP_WIFI_STA_DISCONNECTED_PM_ENABLE=y
+
+# HTTP server + WebSocket (usado pelo web_server para servir a UI DC OS
+# a partir do SPIFFS `dcweb` — ver firmware/main/net/web_server.c)
+CONFIG_HTTPD_WS_SUPPORT=y
+CONFIG_HTTPD_MAX_URI_LEN=256
 
 # Consola/log pelo UART0 (GPIO43/44) — ver app_config.h
 CONFIG_ESP_CONSOLE_UART_DEFAULT=y
