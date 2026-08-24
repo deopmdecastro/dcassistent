@@ -288,6 +288,9 @@
       transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
     }
     .qp-widget:hover { background: var(--bg-elev-hover); }
+    .qp-widget-clickable { cursor: pointer; }
+    .qp-widget-clickable:active { background: var(--bg-elev-hover); border-color: var(--accent); transform: scale(0.99); }
+    .qp-widget-clickable .qp-music-controls i { cursor: pointer; }
     .qp-widget-head {
       display: flex; align-items: center; justify-content: space-between;
       margin-bottom: 8px;
@@ -620,7 +623,10 @@
       align-self: flex-start; background: var(--bg-elev); border: 1px solid var(--stroke);
       border-bottom-left-radius: 4px;
     }
+    .msg.bot-err { border-color: var(--err); }
     .chat-input { display: flex; gap: 8px; margin-top: 8px; }
+    .chat-input input:disabled { opacity: 0.6; }
+    .chat-input .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .chat-input input {
       flex: 1; background: var(--bg-elev); border: 1px solid var(--stroke);
       color: var(--text); border-radius: 999px; padding: 10px 16px; font-size: 12px; min-width: 0;
@@ -986,7 +992,7 @@
       </div>
       <div class="sb-right">
         <i class="fa-solid fa-plane" id="sb-airplane" title="Modo avião"></i>
-        <i class="fa-solid fa-bluetooth-b" id="sb-bt" title="Bluetooth"></i>
+        <i class="fa-brands fa-bluetooth-b" id="sb-bt" title="Bluetooth"></i>
         <i class="fa-solid fa-wifi" id="sb-wifi" title="Wi-Fi"></i>
         <i class="fa-solid fa-volume-high" id="sb-vol" title="Volume"></i>
         <div class="sb-battery"><i class="fa-solid fa-battery-three-quarters"></i><span id="sb-batt">78%</span></div>
@@ -1489,10 +1495,10 @@
     ================================================================ */
     const QUICK_TILES = [
       { id: 'wifiOn',     label: 'Wi-Fi',       icon: 'fa-solid fa-wifi',            sub: () => system.wifiOn ? 'Ligado' : 'Desligado' },
-      { id: 'bluetoothOn',label: 'Bluetooth',   icon: 'fa-solid fa-bluetooth-b',     sub: () => system.bluetoothOn ? 'Ligado' : 'Desligado' },
+      { id: 'bluetoothOn',label: 'Bluetooth',   icon: 'fa-brands fa-bluetooth-b',    sub: () => system.bluetoothOn ? 'Ligado' : 'Desligado' },
       { id: 'airplaneOn', label: 'Modo avião',  icon: 'fa-solid fa-plane',           sub: () => system.airplaneOn ? 'Ativo' : 'Inativo' },
       { id: 'dndOn',      label: 'Não perturbe',icon: 'fa-solid fa-moon',            sub: () => system.dndOn ? 'Ativo' : 'Inativo' },
-      { id: 'flashOn',    label: 'Lanterna',    icon: 'fa-solid fa-flashlight',      sub: () => system.flashOn ? 'Ligada' : 'Desligada' },
+      { id: 'flashOn',    label: 'Lanterna',    icon: 'fa-solid fa-bolt',            sub: () => system.flashOn ? 'Ligada' : 'Desligada' },
       { id: 'rotationOn', label: 'Rotação',     icon: 'fa-solid fa-arrows-rotate',   sub: () => system.rotationOn ? 'Auto' : 'Bloqueada' },
     ];
     function renderQuickTiles() {
@@ -1734,7 +1740,24 @@
     }
 
     /* -------- DC Assistant -------- */
-    const chatHistory = [];
+    // chatHistory guarda a conversa completa ({role:'user'|'bot', text, pending}) para
+    // que o histórico sobreviva a trocas de separador ('Conversa' <-> 'Estado' <-> 'Definições').
+    const chatHistory = [
+      { role: 'bot', text: `Olá! Sou a <b>${assistant.name}</b>. Em que posso ajudar?` },
+    ];
+    let assistantBusy = false;
+
+    function chatBubbleHtml(msg) {
+      const cls = msg.role === 'user' ? 'msg user' : 'msg bot' + (msg.err ? ' bot-err' : '');
+      if (msg.pending) return `<div class="${cls}" id="chat-pending"><i class="fa-solid fa-ellipsis fa-fade"></i></div>`;
+      return `<div class="${cls}">${msg.text}</div>`;
+    }
+    function renderChatLog() {
+      const log = document.getElementById('chat-log');
+      if (!log) return;
+      log.innerHTML = chatHistory.map(chatBubbleHtml).join('');
+      log.scrollTop = log.scrollHeight;
+    }
     function renderAssistant() {
       const body = document.getElementById('app-body');
       body.innerHTML = `
@@ -1758,9 +1781,7 @@
             <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
               <span class="gw-status" id="gw-status-badge"><span class="gw-dot"></span><span class="gw-txt">Gateway desligado</span></span>
             </div>
-            <div class="chat-log" id="chat-log">
-              <div class="msg bot">Olá! Sou a <b>${assistant.name}</b>. Em que posso ajudar?</div>
-            </div>
+            <div class="chat-log" id="chat-log"></div>
             <div class="quick-cmds">
               <button class="btn ghost sm" onclick="assistantQuick('estado do sistema')">Estado do sistema</button>
               <button class="btn ghost sm" onclick="assistantQuick('análise de alarmes')">Alarmes</button>
@@ -1768,10 +1789,11 @@
               <button class="btn ghost sm" onclick="assistantQuick('sugestões')">Sugestões</button>
             </div>
             <div class="chat-input">
-              <input id="chat-text" placeholder="Escreve um comando..." onkeydown="if(event.key==='Enter')assistantSend()">
-              <button class="btn" onclick="assistantSend()"><i class="fa-solid fa-paper-plane"></i></button>
+              <input id="chat-text" placeholder="Escreve um comando..." autocomplete="off" onkeydown="if(event.key==='Enter')assistantSend()">
+              <button class="btn" id="chat-send-btn" onclick="assistantSend()"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
           </div>`;
+        renderChatLog();
         // Actualizar badge do estado do gateway
         if (assistant.gatewayOn && assistant.gatewayUrl) {
           checkGatewayHealth().then(r => updateGatewayStatusUI(r.ok ? 'ok' : 'err'));
@@ -1875,43 +1897,80 @@
       else { badge.querySelector('.gw-txt').textContent = 'Gateway desligado'; }
     }
 
+    // Respostas simuladas por palavra-chave (modo Mock / sem Gateway).
+    // Cada entrada tem uma lista de palavras-chave a procurar no texto do utilizador.
+    const MOCK_INTENTS = [
+      { keys: ['estado do sistema', 'estado geral', 'como está o sistema'],
+        reply: 'Tudo operacional. Rede ligada, temperatura 23.4 °C, humidade 61%, 1 alarme ativo.' },
+      { keys: ['alarme', 'alarmes'],
+        reply: '1 alarme ativo (prioridade alta): temperatura elevada no controlo (28.1 °C). Sugestão: verificar ventilação.' },
+      { keys: ['evento', 'eventos', 'agenda', 'calendário', 'calendario'],
+        reply: 'Hoje: 3 eventos na agenda — 09:00 Reunião de equipa, 11:30 Verificação de rotina, 15:00 Manutenção preventiva.' },
+      { keys: ['sugest'],
+        reply: 'Sugiro baixar o setpoint do controlo em 1 °C e verificar a ventilação para reduzir a temperatura.' },
+      { keys: ['música', 'musica', 'spotify', 'tocar'],
+        reply: 'A tocar "Blinding Lights" de The Weeknd. Diz "próxima" para saltar a faixa.' },
+      { keys: ['temperatura'],
+        reply: 'Temperatura atual: 23.4 °C (ambiente) / 28.1 °C (controlo).' },
+      { keys: ['humidade'],
+        reply: 'Humidade atual: 61%.' },
+      { keys: ['olá', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'oi'],
+        reply: `Olá! Sou a ${assistant.name}. Posso dar-te o estado do sistema, alarmes, agenda ou sugestões — é só perguntar.` },
+      { keys: ['obrigad'],
+        reply: 'De nada! Estou por aqui se precisares de mais alguma coisa.' },
+      { keys: ['ajuda', 'o que fazes', 'o que consegues fazer'],
+        reply: 'Posso informar-te sobre o estado do sistema, analisar alarmes, resumir a agenda e sugerir ajustes. Experimenta um dos atalhos acima.' },
+    ];
+    function mockReply(text) {
+      const t = text.toLowerCase();
+      const hit = MOCK_INTENTS.find(intent => intent.keys.some(k => t.includes(k)));
+      if (hit) return hit.reply;
+      return `Recebido: "${text}". (Resposta simulada — ativa o Gateway nas Definições do assistente para respostas reais.)`;
+    }
+
     async function assistantSend() {
+      if (assistantBusy) return;
       const input = document.getElementById('chat-text');
       const text = input.value.trim(); if (!text) return;
-      const log = document.getElementById('chat-log');
-      log.innerHTML += `<div class="msg user">${text}</div>`;
-      input.value = ''; chatHistory.unshift(text);
-      log.scrollTop = log.scrollHeight;
+      input.value = '';
 
-      // Placeholder "a pensar..."
-      const thinking = document.createElement('div');
-      thinking.className = 'msg bot';
-      thinking.innerHTML = '<i class="fa-solid fa-ellipsis fa-fade"></i>';
-      log.appendChild(thinking);
-      log.scrollTop = log.scrollHeight;
+      chatHistory.push({ role: 'user', text: escapeHtml(text) });
+      chatHistory.push({ role: 'bot', text: '', pending: true });
+      renderChatLog();
 
-      const fallbackReplies = {
-        'estado do sistema':'Tudo operacional. Rede ligada, temperatura 23.4 °C, 1 alarme ativo.',
-        'análise de alarmes':'1 alarme ativo (prioridade alta): temperatura elevada no controlo.',
-        'resumo de eventos':'Hoje: 2 eventos na agenda, 0 manutenções agendadas.',
-        'sugestões':'Sugiro baixar o setpoint do controlo em 1 °C e verificar a ventilação.',
-      };
+      assistantBusy = true;
+      const sendBtn = document.getElementById('chat-send-btn');
+      if (sendBtn) sendBtn.disabled = true;
+      input.disabled = true;
 
+      let finalMsg;
       if (assistant.gatewayOn && assistant.gatewayUrl) {
         try {
           const reply = await callGateway(text);
-          thinking.textContent = reply;
+          finalMsg = { role: 'bot', text: reply };
           updateGatewayStatusUI('ok');
         } catch (err) {
-          thinking.innerHTML = `<i>Falha ao contactar o Gateway (${(err && err.message) || 'erro'}). A usar resposta simulada.</i><br>` +
-            (fallbackReplies[text.toLowerCase()] || `Recebido: "${text}".`);
+          finalMsg = { role: 'bot', err: true,
+            text: `<i>Falha ao contactar o Gateway (${escapeHtml((err && err.message) || 'erro')}). A usar resposta simulada.</i><br>${mockReply(text)}` };
           updateGatewayStatusUI('err');
         }
       } else {
-        const reply = fallbackReplies[text.toLowerCase()] || `Recebido: "${text}". (Resposta simulada — ativa o Gateway nas Definições do assistente.)`;
-        thinking.textContent = reply;
+        finalMsg = { role: 'bot', text: mockReply(text) };
       }
-      log.scrollTop = log.scrollHeight;
+
+      const pendingIdx = chatHistory.findIndex(m => m.pending);
+      if (pendingIdx !== -1) chatHistory[pendingIdx] = finalMsg; else chatHistory.push(finalMsg);
+      renderChatLog();
+
+      assistantBusy = false;
+      if (sendBtn) sendBtn.disabled = false;
+      input.disabled = false;
+      input.focus();
+    }
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
     }
 
     async function testGatewayNow() {
@@ -3063,25 +3122,25 @@
         { time: '15:00', text: 'Manutenção preventiva' },
       ];
       wrap.innerHTML = `
-        <div class="qp-widget">
+        <div class="qp-widget qp-widget-clickable" onclick="openApp('musica');toggleQuickPanel(false)" title="Abrir Música">
           <div class="qp-widget-head">
             <div class="qp-w-title"><i class="fa-brands fa-spotify"></i> Música</div>
-            <small class="qp-w-sub" onclick="openApp('musica');toggleQuickPanel(false)" style="cursor:pointer">Abrir</small>
+            <small class="qp-w-sub">Abrir</small>
           </div>
           <div class="qp-music-row">
             <div class="qp-music-art"><i class="fa-brands fa-spotify"></i></div>
             <div class="qp-music-info"><strong>${track.title}</strong><small>${track.artist}</small></div>
             <div class="qp-music-controls">
-              <i class="fa-solid fa-backward-step" onclick="qpMusicSkip(-1)"></i>
-              <i class="fa-solid ${qpMusicPlaying?'fa-circle-pause':'fa-circle-play'} qp-play" onclick="qpMusicToggle()"></i>
-              <i class="fa-solid fa-forward-step" onclick="qpMusicSkip(1)"></i>
+              <i class="fa-solid fa-backward-step" onclick="event.stopPropagation();qpMusicSkip(-1)"></i>
+              <i class="fa-solid ${qpMusicPlaying?'fa-circle-pause':'fa-circle-play'} qp-play" onclick="event.stopPropagation();qpMusicToggle()"></i>
+              <i class="fa-solid fa-forward-step" onclick="event.stopPropagation();qpMusicSkip(1)"></i>
             </div>
           </div>
         </div>
-        <div class="qp-widget">
+        <div class="qp-widget qp-widget-clickable" onclick="openApp('agenda');toggleQuickPanel(false)" title="Abrir Agenda">
           <div class="qp-widget-head">
             <div class="qp-w-title"><i class="fa-regular fa-calendar-days"></i> Agenda</div>
-            <small class="qp-w-sub" onclick="openApp('agenda');toggleQuickPanel(false)" style="cursor:pointer">Abrir</small>
+            <small class="qp-w-sub">Abrir</small>
           </div>
           <div class="qp-widget-body">
             ${agendaItems.map(a => `<div class="qp-agenda-item"><span class="qp-agenda-time">${a.time}</span><span class="qp-agenda-txt">${a.text}</span></div>`).join('')}
