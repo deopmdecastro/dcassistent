@@ -107,6 +107,35 @@
       .device { aspect-ratio: auto; width: 100vw; height: 100dvh; border-radius: 0; border: none; }
     }
 
+    /* Ecrã muito compacto (ex.: 296x221 do dispositivo embutido) */
+    @media (max-width: 360px), (max-height: 260px) {
+      :root { --fs-base: 11px; }
+      .screen { padding: 34px 12px 10px; }
+      .status-bar { height: 26px; padding: 0 10px; font-size: 10px; }
+      .status-bar .sb-right { gap: 7px; }
+      .app-header { gap: 8px; margin-bottom: 10px; }
+      .back-btn { width: 30px; height: 30px; border-radius: 10px; font-size: 12px; }
+      .app-header .app-icon-mini { width: 30px; height: 30px; border-radius: 10px; font-size: 13px; }
+      .card { padding: 10px 12px; border-radius: 16px; }
+      .card-title { margin-bottom: 8px; }
+      .row + .row { margin-top: 9px; }
+      .btn { padding: 6px 12px; font-size: 11px; }
+      .btn.sm { padding: 4px 10px; font-size: 10px; }
+      .dc-select-btn, input.dc-input { padding: 5px 26px 5px 10px; font-size: 11px; }
+      input.dc-input { padding-right: 10px; }
+      .app-body { gap: 10px; }
+      .launcher-head { margin: 2px 2px 10px; }
+      .launcher-grid { gap: 10px; }
+      .app-item span { font-size: 10px; }
+      .app-item small { display: none; }
+      .sensor-grid { gap: 8px; }
+      .sensor { padding: 10px 6px; }
+      .chips { gap: 5px; overflow-x: auto; flex-wrap: nowrap;
+               scrollbar-width: none; -ms-overflow-style: none; }
+      .chips::-webkit-scrollbar { display: none; }
+      .chip { flex-shrink: 0; }
+    }
+
     /* ==============================================================
        BARRA DE ESTADO (fixa, em todas as páginas)
     ============================================================== */
@@ -262,21 +291,26 @@
     .app-icon {
       width: clamp(46px, 12vw, 66px); height: clamp(46px, 12vw, 66px);
       border-radius: 20px;
-      background: var(--bg-elev);
+      background: linear-gradient(160deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.02) 100%);
       border: 1px solid var(--stroke);
       backdrop-filter: blur(10px);
       display: flex; align-items: center; justify-content: center;
       font-size: clamp(18px, 5vw, 26px);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
-      transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.12);
+      transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
       position: relative; overflow: hidden;
+    }
+    .app-icon::before {
+      content: ""; position: absolute; inset: 0; border-radius: inherit;
+      background: radial-gradient(80% 80% at 50% 30%, currentColor, transparent 65%);
+      opacity: .18; filter: blur(6px); pointer-events: none;
     }
     .app-icon::after {
       content: ""; position: absolute; inset: 0;
-      background: radial-gradient(120% 100% at 50% 0%, rgba(255,255,255,0.08), transparent 60%);
+      background: radial-gradient(120% 100% at 50% 0%, rgba(255,255,255,0.14), transparent 60%);
       pointer-events: none;
     }
-    .app-item:hover .app-icon { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(0,0,0,0.5), 0 0 22px var(--glow); }
+    .app-item:hover .app-icon { transform: translateY(-2px); border-color: currentColor; box-shadow: 0 16px 32px rgba(0,0,0,0.55), 0 0 26px currentColor; }
     .app-item span { font-size: 11px; font-weight: 500; color: var(--text); }
     .app-item small { color: var(--text-mute); font-size: 9px; line-height: 1.2; }
 
@@ -304,22 +338,29 @@
 
     /* ---------- Cartões ---------- */
     .card {
-      background: var(--bg-elev);
+      background: linear-gradient(180deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.028) 100%);
       border: 1px solid var(--stroke);
-      backdrop-filter: blur(12px) saturate(140%);
+      backdrop-filter: blur(14px) saturate(150%);
+      -webkit-backdrop-filter: blur(14px) saturate(150%);
       border-radius: var(--r-lg);
       padding: 14px 16px;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 18px rgba(0,0,0,0.28);
+      position: relative;
     }
-    .card-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .card-title strong { font-size: 13px; font-weight: 600; }
+    .card::before {
+      content: ""; position: absolute; inset: 0; border-radius: inherit;
+      pointer-events: none;
+      background: radial-gradient(140% 90% at 0% 0%, rgba(167,139,250,0.08), transparent 55%);
+    }
+    .card-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; position: relative; }
+    .card-title strong { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
     .card-title small { color: var(--text-mute); font-size: 10px; }
 
-    .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
     .row + .row { margin-top: 12px; }
-    .row-label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-    .row-label strong { font-size: 12px; font-weight: 500; }
-    .row-label small { color: var(--text-mute); font-size: 10px; }
+    .row-label { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+    .row-label strong { font-size: 12px; font-weight: 500; overflow-wrap: break-word; word-break: break-word; }
+    .row-label small { color: var(--text-mute); font-size: 10px; overflow-wrap: break-word; }
 
     /* ---------- Botões ---------- */
     .btn {
@@ -363,23 +404,92 @@
     }
     input:checked + .slider-toggle::before { transform: translateX(18px); }
 
-    select.dc-select, input.dc-input {
+    /* ---------- Input ---------- */
+    input.dc-input {
       background: var(--bg-elev); color: var(--text);
       border: 1px solid var(--stroke); border-radius: var(--r-sm);
-      padding: 6px 10px; font-size: 12px; font-family: inherit; flex-shrink: 0; max-width: 60%;
+      padding: 6px 10px; font-size: 12px; font-family: inherit;
+      flex-shrink: 1; min-width: 0; max-width: 60%;
       transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
-      appearance: none; -webkit-appearance: none; -moz-appearance: none;
-      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23a78bfa' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
-      background-repeat: no-repeat; background-position: right 10px center; padding-right: 26px;
     }
-    input.dc-input {
-      background-image: none; padding-right: 10px;
-    }
-    select.dc-select:focus, input.dc-input:focus {
+    input.dc-input:focus {
       outline: none; border-color: var(--accent); background: var(--bg-elev-2);
       box-shadow: 0 0 0 3px rgba(167,139,250,0.15);
     }
-    select.dc-select option { background: var(--bg-deep); color: var(--text); }
+
+    /* ---------- Custom Select (padronizado) ----------
+       O `<select class="dc-select">` original fica escondido; um
+       botão + painel personalizados são injetados por JS (initCustomSelects). */
+    .dc-select-native { display: none !important; }
+
+    .dc-select-wrap {
+      position: relative;
+      flex-shrink: 1; min-width: 0;
+      max-width: 60%;
+    }
+    .dc-select-btn {
+      width: 100%;
+      background: var(--bg-elev); color: var(--text);
+      border: 1px solid var(--stroke); border-radius: var(--r-sm);
+      padding: 6px 30px 6px 12px;
+      font-size: 12px; font-family: inherit; font-weight: 500;
+      text-align: left; cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease),
+                  box-shadow var(--dur) var(--ease);
+      position: relative;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .dc-select-btn::after {
+      content: ""; position: absolute; right: 10px; top: 50%;
+      width: 10px; height: 6px; margin-top: -3px;
+      background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23a78bfa' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>") no-repeat center / contain;
+      transition: transform var(--dur) var(--ease);
+    }
+    .dc-select-btn:hover { background: var(--bg-elev-hover); border-color: var(--stroke-strong); }
+    .dc-select-wrap.open .dc-select-btn {
+      border-color: var(--accent); background: var(--bg-elev-2);
+      box-shadow: 0 0 0 3px rgba(167,139,250,0.18);
+    }
+    .dc-select-wrap.open .dc-select-btn::after { transform: rotate(180deg); }
+
+    .dc-select-menu {
+      position: absolute; z-index: 50;
+      top: calc(100% + 6px); right: 0;
+      min-width: 100%; max-width: 200px;
+      background: rgba(14, 10, 28, 0.96);
+      backdrop-filter: blur(20px) saturate(160%);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      border: 1px solid var(--stroke-strong);
+      border-radius: var(--r-md);
+      box-shadow: 0 18px 40px rgba(0,0,0,0.55), 0 0 24px rgba(124,58,237,0.18);
+      padding: 4px;
+      max-height: 180px; overflow-y: auto;
+      opacity: 0; transform: translateY(-4px) scale(0.98);
+      pointer-events: none;
+      transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+    }
+    .dc-select-wrap.open .dc-select-menu { opacity: 1; transform: none; pointer-events: auto; }
+    .dc-select-wrap.up .dc-select-menu { top: auto; bottom: calc(100% + 6px); }
+
+    .dc-select-option {
+      padding: 7px 12px; border-radius: 8px;
+      font-size: 12px; color: var(--text); cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+      white-space: nowrap;
+    }
+    .dc-select-option:hover { background: var(--bg-elev-hover); }
+    .dc-select-option.selected {
+      background: linear-gradient(135deg, rgba(167,139,250,0.22), rgba(124,58,237,0.15));
+      color: #fff;
+    }
+    .dc-select-option.selected::after {
+      content: "\f00c"; font-family: "Font Awesome 6 Free"; font-weight: 900;
+      font-size: 10px; color: var(--accent);
+    }
+    .dc-select-menu::-webkit-scrollbar { width: 4px; }
+    .dc-select-menu::-webkit-scrollbar-thumb { background: var(--stroke-strong); border-radius: 999px; }
 
     .range { -webkit-appearance: none; appearance: none;
       height: 6px; background: rgba(255,255,255,0.1);
@@ -704,6 +814,103 @@
   </div>
 
   <script>
+    /* ================================================================
+       CUSTOM SELECT — transforma <select class="dc-select"> em dropdown estilizado
+    ================================================================ */
+    function buildCustomSelect(sel) {
+      if (sel.dataset.dcInit === '1') return;
+      sel.dataset.dcInit = '1';
+      sel.classList.add('dc-select-native');
+
+      const wrap = document.createElement('div');
+      wrap.className = 'dc-select-wrap';
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'dc-select-btn';
+      btn.innerHTML = `<span class="dc-select-label"></span>`;
+
+      const menu = document.createElement('div');
+      menu.className = 'dc-select-menu';
+
+      const syncLabel = () => {
+        const opt = sel.options[sel.selectedIndex];
+        btn.querySelector('.dc-select-label').textContent = opt ? opt.textContent : '';
+        menu.querySelectorAll('.dc-select-option').forEach((n, i) => {
+          n.classList.toggle('selected', i === sel.selectedIndex);
+        });
+      };
+
+      const rebuildMenu = () => {
+        menu.innerHTML = '';
+        [...sel.options].forEach((opt, i) => {
+          const item = document.createElement('div');
+          item.className = 'dc-select-option' + (i === sel.selectedIndex ? ' selected' : '');
+          item.textContent = opt.textContent;
+          item.onclick = (e) => {
+            e.stopPropagation();
+            sel.selectedIndex = i;
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+            syncLabel();
+            closeWrap();
+          };
+          menu.appendChild(item);
+        });
+      };
+
+      const closeWrap = () => wrap.classList.remove('open', 'up');
+      const openWrap = () => {
+        // fechar outros
+        document.querySelectorAll('.dc-select-wrap.open').forEach(w => {
+          if (w !== wrap) w.classList.remove('open', 'up');
+        });
+        wrap.classList.add('open');
+        // decidir se abre para cima
+        const r = btn.getBoundingClientRect();
+        const dev = document.getElementById('device').getBoundingClientRect();
+        if (dev.bottom - r.bottom < 180) wrap.classList.add('up');
+      };
+
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        wrap.classList.contains('open') ? closeWrap() : openWrap();
+      });
+
+      // Inserir no DOM: envolver o <select>
+      sel.parentNode.insertBefore(wrap, sel);
+      wrap.appendChild(btn);
+      wrap.appendChild(menu);
+      wrap.appendChild(sel);
+
+      rebuildMenu();
+      syncLabel();
+
+      sel.addEventListener('change', syncLabel);
+    }
+
+    function initCustomSelects(root = document) {
+      root.querySelectorAll('select.dc-select:not([data-dc-init="1"])').forEach(buildCustomSelect);
+    }
+
+    // Fechar dropdowns ao clicar fora
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.dc-select-wrap.open').forEach(w => w.classList.remove('open', 'up'));
+    });
+
+    // Observar re-renders do app-body / painel do assistente e converter novos selects
+    (function watchRenders() {
+      const start = () => {
+        const obs = new MutationObserver(muts => {
+          for (const m of muts) {
+            if (m.addedNodes && m.addedNodes.length) { initCustomSelects(document); break; }
+          }
+        });
+        obs.observe(document.getElementById('device'), { childList: true, subtree: true });
+      };
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+      else start();
+    })();
+
     /* ================================================================
        APP REGISTRY
     ================================================================ */
@@ -1386,6 +1593,7 @@
       renderLauncher();
       applyI18n();
       updateStatusIcons();
+      initCustomSelects();
       document.getElementById('qp-brightness').value = system.brightness;
       document.getElementById('qp-brightness-val').textContent = system.brightness + '%';
       document.getElementById('qp-volume').value = system.volume;
