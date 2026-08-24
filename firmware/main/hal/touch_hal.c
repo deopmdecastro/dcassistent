@@ -1,19 +1,19 @@
 /**
  * @file touch_hal.c
  * @brief Driver de touch FT6336G (I2C addr 0x38) sobre o barramento partilhado
- * com o codec de áudio ES8311. Usa o componente espressif/esp_lcd_touch_ft6336
+ * com o codec de áudio ES8311. Usa o componente espressif/esp_lcd_touch_ft5x06
  * (ver idf_component.yml) sobre a API i2c_master do ESP-IDF >= 5.3.
  *
  * IMPORTANTE (documentar, não simular): este ficheiro foi escrito e revisto
  * por código, mas NÃO foi compilado nem testado em hardware real nesta
  * sessão de trabalho (sem acesso a ESP-IDF/toolchain nem à placa física).
  * Antes do primeiro flash: correr `idf.py build` e confirmar que a versão
- * instalada de esp_lcd_touch_ft6336 expõe exatamente estas assinaturas.
+ * instalada de esp_lcd_touch_ft5x06 expõe exatamente estas assinaturas.
  */
 #include "touch_hal.h"
 #include "app_config.h"
 
-#include "esp_lcd_touch_ft6336.h"
+#include "esp_lcd_touch_ft5x06.h"
 #include "esp_lcd_panel_io.h"
 #include "esp_log.h"
 #include "esp_check.h"
@@ -53,7 +53,7 @@ esp_err_t dc_touch_hal_init(esp_lcd_touch_handle_t *out_touch_handle)
     ESP_RETURN_ON_ERROR(i2c_new_master_bus(&bus_cfg, &s_i2c_bus), TAG, "i2c_new_master_bus");
 
     esp_lcd_panel_io_handle_t tp_io_handle = NULL;
-    esp_lcd_panel_io_i2c_config_t tp_io_cfg = ESP_LCD_TOUCH_IO_I2C_FT6336_CONFIG();
+    esp_lcd_panel_io_i2c_config_t tp_io_cfg = ESP_LCD_TOUCH_IO_I2C_FT5x06_CONFIG();
     tp_io_cfg.scl_speed_hz = DC_I2C_FREQ_HZ;
     ESP_RETURN_ON_ERROR(
         esp_lcd_new_panel_io_i2c(s_i2c_bus, &tp_io_cfg, &tp_io_handle),
@@ -70,9 +70,9 @@ esp_err_t dc_touch_hal_init(esp_lcd_touch_handle_t *out_touch_handle)
             .mirror_y = 0,
         },
     };
-    esp_err_t err = esp_lcd_touch_new_i2c_ft6336(tp_io_handle, &tp_cfg, &s_touch_handle);
+    esp_err_t err = esp_lcd_touch_new_i2c_ft5x06(tp_io_handle, &tp_cfg, &s_touch_handle);
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "esp_lcd_touch_new_i2c_ft6336 falhou (%s) — a UI cai para "
+        ESP_LOGE(TAG, "esp_lcd_touch_new_i2c_ft5x06 falhou (%s) — a UI cai para "
                        "navegação só por botão BOOT como fallback", esp_err_to_name(err));
         s_ready = false;
         return err;
