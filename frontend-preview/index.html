@@ -136,8 +136,9 @@
       .chip { flex-shrink: 0; }
 
       /* Painel rápido compacto */
-      .quick-panel { padding: 32px 12px 16px; max-height: 100%; overflow-y: auto; }
+      .quick-panel { padding: 32px 12px 16px; max-height: 100%; overflow: hidden; }
       .quick-panel .qp-header { margin-bottom: 10px; }
+      .quick-panel .qp-scroll { padding-bottom: 32px; }
       .quick-panel .qp-header .qp-title strong { font-size: 12px; }
       .quick-panel .qp-header .qp-title small { font-size: 9px; }
       .qp-close { width: 26px; height: 26px; }
@@ -201,7 +202,9 @@
     .quick-panel {
       position: absolute; top: 0; left: 0; right: 0;
       z-index: 40;
-      background: rgba(10, 7, 22, 0.82);
+      display: flex; flex-direction: column;
+      max-height: 100%; min-height: 0;
+      background: rgba(10, 7, 22, 0.92);
       backdrop-filter: blur(24px) saturate(160%);
       -webkit-backdrop-filter: blur(24px) saturate(160%);
       border-bottom: 1px solid var(--stroke);
@@ -211,6 +214,17 @@
       box-shadow: 0 20px 60px rgba(0,0,0,0.55);
     }
     .quick-panel.open { transform: translateY(0); }
+    .qp-scroll {
+      flex: 1; min-height: 0; overflow-y: auto;
+      padding: 0 2px 34px 0;
+      scrollbar-width: thin;
+      scrollbar-color: var(--stroke-strong) transparent;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+    .qp-scroll::-webkit-scrollbar { width: 4px; }
+    .qp-scroll::-webkit-scrollbar-track { background: transparent; }
+    .qp-scroll::-webkit-scrollbar-thumb { background: var(--stroke-strong); border-radius: 999px; }
     .quick-panel .qp-drag {
       position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%);
       width: 60px; height: 4px; border-radius: 999px;
@@ -980,22 +994,24 @@
         </div>
         <button class="qp-close" onclick="toggleQuickPanel(false)"><i class="fa-solid fa-xmark"></i></button>
       </div>
-      <div class="qp-tiles" id="qp-tiles"></div>
-      <div class="qp-hidden-section" id="qp-hidden-section">
-        <div class="qp-hidden-title">Tiles ocultos (toca para mostrar)</div>
-        <div class="qp-hidden-list" id="qp-hidden-list"></div>
-      </div>
-      <!-- Widgets do painel rápido -->
-      <div id="qp-widgets"></div>
-      <div class="qp-slider">
-        <i class="fa-solid fa-sun"></i>
-        <input type="range" class="range" style="flex:1" id="qp-brightness" min="20" max="100" step="1">
-        <span class="qp-val" id="qp-brightness-val">80%</span>
-      </div>
-      <div class="qp-slider">
-        <i class="fa-solid fa-volume-high"></i>
-        <input type="range" class="range" style="flex:1" id="qp-volume" min="0" max="100" step="1">
-        <span class="qp-val" id="qp-volume-val">60%</span>
+      <div class="qp-scroll" id="qp-scroll">
+        <div class="qp-tiles" id="qp-tiles"></div>
+        <div class="qp-hidden-section" id="qp-hidden-section">
+          <div class="qp-hidden-title">Tiles ocultos (toca para mostrar)</div>
+          <div class="qp-hidden-list" id="qp-hidden-list"></div>
+        </div>
+        <!-- Widgets do painel rápido -->
+        <div id="qp-widgets"></div>
+        <div class="qp-slider">
+          <i class="fa-solid fa-sun"></i>
+          <input type="range" class="range" style="flex:1" id="qp-brightness" min="20" max="100" step="1">
+          <span class="qp-val" id="qp-brightness-val">80%</span>
+        </div>
+        <div class="qp-slider">
+          <i class="fa-solid fa-volume-high"></i>
+          <input type="range" class="range" style="flex:1" id="qp-volume" min="0" max="100" step="1">
+          <span class="qp-val" id="qp-volume-val">60%</span>
+        </div>
       </div>
       <div class="qp-drag"></div>
     </div>
@@ -1629,12 +1645,16 @@
 
       // Arrastar o painel para cima para fechar
       let pStartY = null;
-      panel.addEventListener('mousedown', e => { pStartY = e.clientY; });
+      panel.addEventListener('mousedown', e => {
+        pStartY = e.target.closest('.qp-drag') ? e.clientY : null;
+      });
       window.addEventListener('mouseup', e => {
         if (pStartY !== null && (pStartY - e.clientY) > 40) toggleQuickPanel(false);
         pStartY = null;
       });
-      panel.addEventListener('touchstart', e => { pStartY = e.touches[0].clientY; }, { passive: true });
+      panel.addEventListener('touchstart', e => {
+        pStartY = e.target.closest('.qp-drag') ? e.touches[0].clientY : null;
+      }, { passive: true });
       window.addEventListener('touchend', e => {
         if (pStartY !== null && e.changedTouches[0] && (pStartY - e.changedTouches[0].clientY) > 40) toggleQuickPanel(false);
         pStartY = null;
