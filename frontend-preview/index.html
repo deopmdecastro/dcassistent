@@ -134,6 +134,35 @@
                scrollbar-width: none; -ms-overflow-style: none; }
       .chips::-webkit-scrollbar { display: none; }
       .chip { flex-shrink: 0; }
+
+      /* Painel rápido compacto */
+      .quick-panel { padding: 32px 12px 16px; max-height: 100%; overflow-y: auto; }
+      .quick-panel .qp-header { margin-bottom: 10px; }
+      .quick-panel .qp-header .qp-title strong { font-size: 12px; }
+      .quick-panel .qp-header .qp-title small { font-size: 9px; }
+      .qp-close { width: 26px; height: 26px; }
+      .qp-tiles { gap: 8px; margin-bottom: 10px; }
+      .qp-tile { padding: 8px; gap: 8px; }
+      .qp-tile .qp-ic { width: 30px; height: 30px; border-radius: 9px; font-size: 12px; }
+      .qp-tile .qp-txt strong { font-size: 10px; }
+      .qp-tile .qp-txt small { font-size: 8px; }
+      .qp-slider { padding: 8px 12px; gap: 10px; margin-bottom: 6px; }
+      .qp-slider input[type="range"] { min-width: 0; }
+
+      /* Assistant / Chat */
+      .msg { padding: 8px 12px; font-size: 11px; border-radius: 14px; max-width: 88%; }
+      .chat-input { gap: 6px; margin-top: 6px; }
+      .chat-input input { padding: 8px 12px; font-size: 11px; }
+      .chat-input .btn { padding: 6px 12px; }
+      .quick-cmds { gap: 5px; margin: 4px 0;
+                    overflow-x: auto; flex-wrap: nowrap;
+                    scrollbar-width: none; -ms-overflow-style: none; }
+      .quick-cmds::-webkit-scrollbar { display: none; }
+      .quick-cmds .btn { flex-shrink: 0; font-size: 9px; padding: 4px 10px; }
+      .app-tabs { overflow-x: auto; flex-wrap: nowrap;
+                  scrollbar-width: none; -ms-overflow-style: none; }
+      .app-tabs::-webkit-scrollbar { display: none; }
+      .app-tabs .tab-btn { flex-shrink: 0; padding: 5px 12px; font-size: 10px; }
     }
 
     /* ==============================================================
@@ -200,8 +229,11 @@
     }
 
     .qp-tiles {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
       margin-bottom: 14px;
+    }
+    @media (min-width: 480px) {
+      .qp-tiles { grid-template-columns: repeat(4, 1fr); }
     }
     .qp-tile {
       background: var(--bg-elev); border: 1px solid var(--stroke);
@@ -380,6 +412,11 @@
       border: 1px solid var(--stroke); box-shadow: none;
     }
     .btn.ghost:hover { background: var(--bg-elev-hover); }
+    .btn.ghost.active {
+      background: linear-gradient(135deg, rgba(167,139,250,0.28), rgba(124,58,237,0.15));
+      border-color: rgba(167,139,250,0.6); color: #fff;
+      box-shadow: 0 4px 14px rgba(124,58,237,0.35);
+    }
     .btn.ok  { background: linear-gradient(180deg, #4ade80, #22c55e); box-shadow: 0 6px 18px rgba(34,197,94,0.35); }
     .btn.err { background: linear-gradient(180deg, #fb7185, #ef4444); box-shadow: 0 6px 18px rgba(239,68,68,0.35); }
     .btn.sm  { padding: 5px 12px; font-size: 10px; }
@@ -1101,7 +1138,6 @@
             system[tile.id] = !system[tile.id];
           }
           saveSystem(); renderQuickTiles(); updateStatusIcons();
-          toast({ type:'ok', title: tile.label, message: tile.sub() });
         };
         wrap.appendChild(el);
       });
@@ -1264,7 +1300,7 @@
         panel.innerHTML = `
           <div class="card" style="margin-top:8px"><div class="card-title"><strong>Definições do DC Assistant</strong><small>só esta aplicação</small></div>
             <div class="row"><div class="row-label"><strong>Nome do assistente</strong></div>
-              <input class="dc-input" id="asst-name" value="${assistant.name}" onchange="assistant.name=this.value;saveAssistant();toast({type:'ok',title:'Guardado'})"></div>
+              <input class="dc-input" id="asst-name" value="${assistant.name}" onchange="assistant.name=this.value;saveAssistant()"></div>
             <div class="row"><div class="row-label"><strong>Idioma</strong></div>
               <select class="dc-select" onchange="assistant.language=this.value;saveAssistant()">
                 <option value="pt" ${assistant.language==='pt'?'selected':''}>Português</option>
@@ -1327,8 +1363,8 @@
           <div class="row" style="flex-wrap:wrap;gap:8px">
             <button class="btn ok"    onclick="confirmarAcao('Ligar equipamento?','Vai ativar o equipamento.','ok','Ligar','ok')">Ligar</button>
             <button class="btn err"   onclick="confirmarAcao('Desligar equipamento?','Vai desativar o equipamento.','warn','Desligar','err')">Desligar</button>
-            <button class="btn ghost" onclick="toast({type:'ok',title:'Modo alterado',message:'Manual'})">Manual</button>
-            <button class="btn ghost" onclick="toast({type:'ok',title:'Modo alterado',message:'Automático'})">Automático</button>
+            <button class="btn ghost" onclick="this.parentElement.querySelectorAll('.btn.ghost').forEach(b=>b.classList.remove('active'));this.classList.add('active')">Manual</button>
+            <button class="btn ghost active" onclick="this.parentElement.querySelectorAll('.btn.ghost').forEach(b=>b.classList.remove('active'));this.classList.add('active')">Automático</button>
           </div>
         </div>
         <div class="card"><div class="card-title"><strong>Setpoints</strong><small>configuração</small></div>
@@ -1438,9 +1474,9 @@
           <h3 style="font-size:16px;font-weight:600">Blinding Lights</h3>
           <p class="muted" style="font-size:11px;margin-top:2px">The Weeknd</p>
           <div class="row" style="justify-content:center;gap:28px;margin-top:14px;">
-            <i class="fa-solid fa-backward-step" style="cursor:pointer;font-size:18px;color:var(--text-dim)" onclick="toast({type:'info',title:'Anterior'})"></i>
+            <i class="fa-solid fa-backward-step" style="cursor:pointer;font-size:18px;color:var(--text-dim)"></i>
             <i class="fa-solid fa-circle-play" id="play-btn" style="cursor:pointer;font-size:34px;color:var(--accent);filter:drop-shadow(0 0 12px var(--glow))" onclick="togglePlay()"></i>
-            <i class="fa-solid fa-forward-step" style="cursor:pointer;font-size:18px;color:var(--text-dim)" onclick="toast({type:'info',title:'Próxima'})"></i>
+            <i class="fa-solid fa-forward-step" style="cursor:pointer;font-size:18px;color:var(--text-dim)"></i>
           </div>
         </div>
         <div class="card"><div class="card-title"><strong>Volume</strong><small>${system.volume}%</small></div>
@@ -1527,7 +1563,7 @@
       const rows = {
         'Sistema': `
           <div class="row"><div class="row-label"><strong>Nome do dispositivo</strong></div>
-            <input class="dc-input" value="${system.deviceName}" onchange="system.deviceName=this.value;saveSystem();toast({type:'ok',title:'Guardado'})"></div>
+            <input class="dc-input" value="${system.deviceName}" onchange="system.deviceName=this.value;saveSystem()"></div>
           <div class="row"><div class="row-label"><strong>Data e hora</strong></div><span class="muted">Automático (NTP)</span></div>
           <div class="row"><div class="row-label"><strong>Idioma</strong></div>
             <select class="dc-select" onchange="system.language=this.value;saveSystem();applyI18n()">
@@ -1541,7 +1577,7 @@
           <div class="row"><span class="muted">Informações do dispositivo</span><span>ESP32-S3 · DC 0.4</span></div>`,
         'Interface': `
           <div class="row"><div class="row-label"><strong>Tema</strong></div>
-            <select class="dc-select" onchange="system.theme=this.value;saveSystem();toast({type:'ok',title:'Tema alterado'})">
+            <select class="dc-select" onchange="system.theme=this.value;saveSystem()">
               <option value="dark" ${system.theme==='dark'?'selected':''}>Escuro</option>
               <option value="light" ${system.theme==='light'?'selected':''}>Claro</option></select></div>
           <div class="row"><div class="row-label"><strong>Brilho</strong><small>${system.brightness}%</small></div>
@@ -1555,9 +1591,9 @@
             <label class="switch"><input type="checkbox" ${system.showStats?'checked':''} onchange="system.showStats=this.checked;saveSystem()"><span class="slider-toggle"></span></label></div>`,
         'Rede': `
           <div class="row"><div class="row-label"><strong>Wi-Fi</strong></div>
-            <label class="switch"><input type="checkbox" ${system.wifiOn?'checked':''} onchange="system.wifiOn=this.checked;saveSystem();updateStatusIcons();toast({type:'ok',title:'Wi-Fi',message:this.checked?'Ligado':'Desligado'})"><span class="slider-toggle"></span></label></div>
+            <label class="switch"><input type="checkbox" ${system.wifiOn?'checked':''} onchange="system.wifiOn=this.checked;saveSystem();updateStatusIcons()"><span class="slider-toggle"></span></label></div>
           <div class="row"><div class="row-label"><strong>Bluetooth</strong></div>
-            <label class="switch"><input type="checkbox" ${system.bluetoothOn?'checked':''} onchange="system.bluetoothOn=this.checked;saveSystem();updateStatusIcons();toast({type:'ok',title:'Bluetooth',message:this.checked?'Ligado':'Desligado'})"><span class="slider-toggle"></span></label></div>
+            <label class="switch"><input type="checkbox" ${system.bluetoothOn?'checked':''} onchange="system.bluetoothOn=this.checked;saveSystem();updateStatusIcons()"><span class="slider-toggle"></span></label></div>
           <div class="row"><div class="row-label"><strong>Modo avião</strong></div>
             <label class="switch"><input type="checkbox" ${system.airplaneOn?'checked':''} onchange="system.airplaneOn=this.checked;if(this.checked){system.wifiOn=false;system.bluetoothOn=false;}saveSystem();updateStatusIcons();renderSetCat()"><span class="slider-toggle"></span></label></div>
           <div class="row"><div class="row-label"><strong>Ethernet</strong></div><span class="muted">Não ligado</span></div>
@@ -1604,9 +1640,6 @@
       // Splash — esconder após ~2.4s
       setTimeout(() => {
         document.getElementById('splash').classList.add('hide');
-        setTimeout(() => {
-          toast({ type:'ok', title:'Bem-vinda', message:`Olá, sou a ${assistant.name}` });
-        }, 500);
       }, 2400);
     }
     boot();
