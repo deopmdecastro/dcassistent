@@ -1,0 +1,13 @@
+# Portado de firmware/sdkconfig.defaults (ver docs/firmware-architecture.md secção 12)
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+CONFIG_ESP_WIFI_STA_DISCONNECTED_PM_ENABLE=y
+
+# Build "std" em Rust precisa de um pouco mais de stack na task principal
+# do que o mínimo de C puro.
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
+# Necessário pelo esp-idf-sys/esp-idf-svc para builds std em Rust.
+CONFIG_ESP_TASK_WDT_TIMEOUT_S=30
+CONFIG_FREERTOS_HZ=1000

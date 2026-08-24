@@ -1,0 +1,47 @@
+[package]
+name = "dc-firmware-rs"
+version = "0.1.0"
+edition = "2021"
+resolver = "2"
+authors = ["Zana <deopmdecastro>"]
+
+# Fase 0.1 (Rust) — validação isolada de hardware: display, touch, boot,
+# e LED de estado. Nenhuma lógica de UI/OS ainda.
+#
+# Este crate substitui progressivamente `firmware/` (C/ESP-IDF/LVGL).
+# O objetivo é migrar para Rust + esp-idf-hal + esp-idf-svc (Wi-Fi/rede)
+# como base para a UI em Slint (fase seguinte, docs/interface-os.md).
+
+[[bin]]
+name = "dc-firmware-rs"
+harness = false
+
+[profile.release]
+opt-level = "s"
+lto = true
+
+[profile.dev]
+debug = true
+opt-level = "z"
+
+[features]
+default = []
+
+[dependencies]
+esp-idf-svc = { version = "0.51", features = ["binstart"] }
+esp-idf-hal = "0.45"
+esp-idf-sys = { version = "0.36", features = ["binstart"] }
+log = "0.4"
+embedded-hal = "1.0"
+embedded-hal-bus = "0.2"
+embedded-graphics = "0.8"
+# Driver ILI9341 baseado em embedded-graphics/embedded-hal 1.0 (SPI 4 fios).
+mipidsi = "0.9"
+display-interface-spi = "0.5"
+# LED de estado (WS2812B, GPIO42) via RMT — usado só para sinalizar
+# progresso da validação (boot / lcd ok / touch ok / erro).
+ws2812-esp32-rmt-driver = { version = "0.11", features = ["smart-leds-trait"] }
+smart-leds-trait = "0.3"
+
+[build-dependencies]
+embuild = "0.32"

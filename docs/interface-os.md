@@ -211,8 +211,16 @@ sistema operativo.
 ## 7. Implementação
 
 - **`frontend-preview/index.html`** — mockup funcional do sistema operativo (launcher + aplicações).
-- **`firmware/main/services/ui_manager.c`** — interface LVGL do ESP32-S3, reorganizada por aplicações.
+- **`firmware/main/services/ui_manager.c`** — interface LVGL do ESP32-S3 (versão atual, a substituir).
+- **`firmware-rs/`** — novo firmware em **Rust + esp-idf-hal/esp-idf-svc**, base sobre a qual a UI
+  em **Slint** vai ser construída (substitui progressivamente `firmware/`). Ver `firmware-rs/README.md`.
+  Fase 0.1 (atual): validação isolada de hardware (LCD, touch, boot) — ainda sem UI Slint.
 - **`docs/interface-os.md`** — este documento (fonte de verdade da arquitetura de interface).
+
+> **Decisão de stack (2026-08-24)**: Slint corre sobre **Rust + esp-idf-hal**, não sobre o backend
+> C++ MCU do Slint — é o caminho oficialmente suportado do Slint para microcontroladores. Implica
+> reescrever o firmware de C para Rust; `firmware/` (C) mantém-se intacto até `firmware-rs/` estar
+> validado em hardware real e a UI Slint tiver o launcher + pelo menos uma aplicação funcional.
 
 ### 7.1 Frontend (mockup)
 
