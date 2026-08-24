@@ -1,0 +1,28 @@
+// Registo de aplicações — espelha a tabela da secção 4 de
+// docs/interface-os.md (App Registry, "fonte de verdade do sistema").
+// O launcher lê SÓ desta lista; para adicionar uma app nova, mexe-se
+// aqui e no roteamento em src/bin/dc_os.rs (função `open_app`).
+//
+// `icon` é texto (emoji/glifo) nesta fase — não há ainda um conjunto de
+// ícones bitmap/vetoriais próprios da DC. Trocar por `image` quando
+// existirem.
+
+export struct AppEntry {
+    id: string,
+    name: string,
+    icon: string,
+    accent: color,
+}
+
+export global AppRegistry {
+    out property <[AppEntry]> apps: [
+        { id: "assistant", name: "DC Assistant", icon: "🤖", accent: #3ea6ff },
+        { id: "controlo", name: "Controlo", icon: "🎛️", accent: #3ecf8e },
+        { id: "monitorizacao", name: "Monitorização", icon: "📊", accent: #f5a623 },
+        { id: "alarmes", name: "Alarmes", icon: "🔔", accent: #ef4444 },
+        { id: "agenda", name: "Agenda", icon: "📅", accent: #a78bfa },
+        { id: "musica", name: "Música", icon: "🎵", accent: #ec4899 },
+        { id: "loja", name: "Loja", icon: "🛍️", accent: #14b8a6 },
+        { id: "definicoes", name: "Definições", icon: "⚙️", accent: #9aa3b5 },
+    ];
+}

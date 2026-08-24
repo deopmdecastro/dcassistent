@@ -214,7 +214,9 @@ sistema operativo.
 - **`firmware/main/services/ui_manager.c`** — interface LVGL do ESP32-S3 (versão atual, a substituir).
 - **`firmware-rs/`** — novo firmware em **Rust + esp-idf-hal/esp-idf-svc**, base sobre a qual a UI
   em **Slint** vai ser construída (substitui progressivamente `firmware/`). Ver `firmware-rs/README.md`.
-  Fase 0.1 (atual): validação isolada de hardware (LCD, touch, boot) — ainda sem UI Slint.
+  Fase 0.1: validação isolada de hardware (LCD, touch, boot). Fase 2 (`src/bin/dc_os.rs` +
+  `firmware-rs/ui/*.slint`): launcher + apps (Controlo, Monitorização, Definições implementadas;
+  restantes com placeholder) — nenhuma das duas fases testada em hardware real ainda.
 - **`docs/interface-os.md`** — este documento (fonte de verdade da arquitetura de interface).
 
 > **Decisão de stack (2026-08-24)**: Slint corre sobre **Rust + esp-idf-hal**, não sobre o backend

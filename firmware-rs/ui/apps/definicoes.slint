@@ -1,0 +1,59 @@
+// App "Definições" — SÓ definições globais do sistema (Sistema, Interface,
+// Rede, Segurança, Hardware, Aplicações — docs/interface-os.md 5.8/6).
+// Nunca deve conter definições específicas de uma app (ex.: nome/voz do
+// DC Assistant, setpoints do Controlo) — essas ficam dentro da própria
+// app, em ecrãs próprios (ver ui/apps/controlo.slint como exemplo).
+
+import { Theme } from "../theme.slint";
+import { AppShell } from "../app-shell.slint";
+
+struct SettingsCategory {
+    label: string,
+    icon: string,
+}
+
+export component DefinicoesApp inherits AppShell {
+    title: "Definições";
+    accent: #9aa3b5;
+
+    callback open-category(string);
+
+    property <[SettingsCategory]> categories: [
+        { label: "Sistema", icon: "🖥️" },
+        { label: "Interface", icon: "🎨" },
+        { label: "Rede", icon: "📶" },
+        { label: "Segurança", icon: "🔒" },
+        { label: "Hardware", icon: "🔧" },
+        { label: "Aplicações", icon: "🧩" },
+    ];
+
+    VerticalLayout {
+        padding: Theme.gap-md;
+        spacing: Theme.gap-sm;
+
+        for cat in categories: cat-touch := TouchArea {
+            height: 34px;
+            clicked => { root.open-category(cat.label); }
+
+            Rectangle {
+                border-radius: Theme.radius-sm;
+                background: cat-touch.pressed ? Theme.bg-tile-pressed : transparent;
+
+                HorizontalLayout {
+                    padding-left: Theme.gap-md;
+                    spacing: Theme.gap-md;
+                    Text {
+                        text: cat.icon;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: cat.label;
+                        color: Theme.text-primary;
+                        font-size: Theme.font-sm;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+    }
+}

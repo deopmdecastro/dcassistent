@@ -1,0 +1,89 @@
+// App "Controlo" — comandos do sistema (ligar/desligar, manual/auto,
+// setpoints, modos). Definições próprias desta app (setpoints) vivem
+// aqui dentro, nunca em Definições globais (docs/interface-os.md 5.2/6).
+
+import { Theme } from "../theme.slint";
+import { AppShell } from "../app-shell.slint";
+
+export component ControloApp inherits AppShell {
+    title: "Controlo";
+    accent: #3ecf8e;
+
+    in property <bool> system-on: false;
+    in property <bool> auto-mode: true;
+    callback toggle-power();
+    callback toggle-mode();
+
+    VerticalLayout {
+        padding: Theme.gap-lg;
+        spacing: Theme.gap-md;
+
+        Rectangle {
+            height: 48px;
+            border-radius: Theme.radius-md;
+            background: Theme.bg-surface;
+
+            HorizontalLayout {
+                padding: Theme.gap-md;
+                Text {
+                    text: "Sistema";
+                    color: Theme.text-primary;
+                    vertical-alignment: center;
+                }
+                Rectangle { }
+                power-touch := TouchArea {
+                    width: 60px;
+                    clicked => { root.toggle-power(); }
+                    Rectangle {
+                        border-radius: Theme.radius-sm;
+                        background: system-on ? Theme.success : Theme.bg-tile;
+                        Text {
+                            text: system-on ? "ON" : "OFF";
+                            color: system-on ? #0a0a0a : Theme.text-secondary;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                            font-size: Theme.font-sm;
+                        }
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            height: 48px;
+            border-radius: Theme.radius-md;
+            background: Theme.bg-surface;
+
+            HorizontalLayout {
+                padding: Theme.gap-md;
+                Text {
+                    text: "Modo";
+                    color: Theme.text-primary;
+                    vertical-alignment: center;
+                }
+                Rectangle { }
+                mode-touch := TouchArea {
+                    width: 90px;
+                    clicked => { root.toggle-mode(); }
+                    Rectangle {
+                        border-radius: Theme.radius-sm;
+                        background: Theme.bg-tile;
+                        Text {
+                            text: auto-mode ? "Automático" : "Manual";
+                            color: Theme.accent;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                            font-size: Theme.font-sm;
+                        }
+                    }
+                }
+            }
+        }
+
+        Text {
+            text: "Setpoints — por implementar (fase seguinte)";
+            color: Theme.text-disabled;
+            font-size: Theme.font-xs;
+        }
+    }
+}
