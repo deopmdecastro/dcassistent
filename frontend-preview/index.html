@@ -5,311 +5,762 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>DC — Sistema Operativo</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
+    /* ==============================================================
+       DC OS — Tema Escuro Moderno (Glassmorphism + Aurora)
+    ============================================================== */
     :root {
-      --bg-main: #0c0814;
-      --bg-card: rgba(255, 255, 255, 0.05);
-      --bg-card-hover: rgba(255, 255, 255, 0.08);
-      --purple-accent: #8b5cf6;
-      --purple-glow: rgba(139, 92, 246, 0.4);
-      --text-main: #ffffff;
-      --text-muted: #a1a1aa;
-      --border-color: rgba(255, 255, 255, 0.1);
-      --ok: #36d6c0;
-      --warn: #f59e0b;
-      --err: #ef4444;
-      --fs-base: clamp(10px, 2.6vw, 14px);
+      --bg-void: #05030c;
+      --bg-deep: #0a0716;
+      --bg-elev: rgba(255, 255, 255, 0.045);
+      --bg-elev-2: rgba(255, 255, 255, 0.075);
+      --bg-elev-hover: rgba(255, 255, 255, 0.11);
+      --stroke: rgba(255, 255, 255, 0.08);
+      --stroke-strong: rgba(255, 255, 255, 0.16);
+
+      --accent: #a78bfa;
+      --accent-2: #7c3aed;
+      --accent-cyan: #22d3ee;
+      --accent-pink: #f472b6;
+      --glow: rgba(139, 92, 246, 0.55);
+
+      --text: #f5f3ff;
+      --text-dim: #b4b0c8;
+      --text-mute: #7a758f;
+
+      --ok: #34d399;
+      --warn: #fbbf24;
+      --err: #f87171;
+
+      --r-sm: 10px;
+      --r-md: 14px;
+      --r-lg: 20px;
+      --r-xl: 28px;
+
+      --shadow-1: 0 10px 30px rgba(0,0,0,0.45);
+      --shadow-glow: 0 0 40px rgba(139, 92, 246, 0.25);
+
+      --fs-base: clamp(11px, 2.6vw, 14px);
+      --dur: 240ms;
+      --ease: cubic-bezier(.2, .8, .2, 1);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        font-family: 'Sora', 'Segoe UI', system-ui, sans-serif;
+        -webkit-tap-highlight-color: transparent; user-select: none; }
+    ::selection { background: var(--accent-2); color: #fff; }
 
     html, body { height: 100%; }
 
     body {
-      background-color: #050308;
+      background: #020106;
       display: flex; justify-content: center; align-items: center;
-      min-height: 100dvh; color: var(--text-main);
+      min-height: 100dvh; color: var(--text);
       font-size: var(--fs-base); overflow: hidden;
     }
 
-    /* Enclosure que simula o ecrã — mantém a proporção do painel real */
-    .screen-container {
+    /* ---------- Enclosure que simula o ecrã do dispositivo ---------- */
+    .device {
       width: min(800px, 100vw);
       aspect-ratio: 800 / 480;
       max-height: 100dvh;
-      background: var(--bg-main);
-      border-radius: clamp(0px, 2vw, 16px);
-      border: 1px solid var(--border-color);
-      box-shadow: 0 0 30px rgba(139, 92, 246, 0.15);
-      position: relative; overflow: hidden;
+      background: var(--bg-void);
+      border-radius: clamp(0px, 2vw, 20px);
+      border: 1px solid var(--stroke);
+      box-shadow: var(--shadow-1), var(--shadow-glow);
+      position: relative; overflow: hidden; isolation: isolate;
+    }
+
+    /* Aurora background (aurora glows atrás de tudo) */
+    .device::before, .device::after {
+      content: ""; position: absolute; inset: -30%; z-index: 0;
+      background:
+        radial-gradient(closest-side at 20% 20%, rgba(124, 58, 237, 0.55), transparent 60%),
+        radial-gradient(closest-side at 80% 30%, rgba(34, 211, 238, 0.28), transparent 65%),
+        radial-gradient(closest-side at 50% 90%, rgba(244, 114, 182, 0.28), transparent 70%);
+      filter: blur(60px) saturate(140%);
+      opacity: .55; pointer-events: none;
+      animation: aurora 22s var(--ease) infinite alternate;
+    }
+    .device::after {
+      background:
+        radial-gradient(closest-side at 70% 70%, rgba(167, 139, 250, 0.35), transparent 65%),
+        radial-gradient(closest-side at 15% 80%, rgba(59, 130, 246, 0.28), transparent 70%);
+      animation-duration: 30s; animation-direction: alternate-reverse; opacity: .45;
+    }
+    @keyframes aurora {
+      0%   { transform: translate(0,0) scale(1); }
+      100% { transform: translate(4%,-3%) scale(1.08); }
+    }
+
+    /* Grain / noise overlay */
+    .device .noise {
+      position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: .04;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>");
+      mix-blend-mode: overlay;
     }
 
     @media (max-width: 420px), (max-height: 320px) {
-      .screen-container { aspect-ratio: auto; width: 100vw; height: 100dvh; border-radius: 0; border: none; }
+      .device { aspect-ratio: auto; width: 100vw; height: 100dvh; border-radius: 0; border: none; }
     }
 
-    .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0;
-              padding: clamp(8px, 3vw, 24px); overflow-y: auto; }
-    .screen.active { display: flex; flex-direction: column; }
-
-    /* ---------- Barra de estado (sempre visível no launcher) ---------- */
+    /* ==============================================================
+       BARRA DE ESTADO (fixa, em todas as páginas)
+    ============================================================== */
     .status-bar {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 0 2px 8px; color: var(--text-muted);
-      font-size: clamp(9px, 2.2vw, 13px);
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 30px; z-index: 30;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 14px;
+      color: var(--text);
+      font-size: 11px; font-weight: 500;
+      background: linear-gradient(180deg, rgba(5,3,12,0.75) 0%, rgba(5,3,12,0) 100%);
+      backdrop-filter: blur(14px) saturate(140%);
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
+      cursor: grab;
     }
-    .status-bar .right { display: flex; align-items: center; gap: 10px; }
-    .status-bar i { color: var(--purple-accent); }
+    .status-bar:active { cursor: grabbing; }
+    .status-bar .sb-left { display: flex; align-items: center; gap: 8px; }
+    .status-bar .sb-left .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 8px var(--glow); }
+    .status-bar .sb-right { display: flex; align-items: center; gap: 10px; }
+    .status-bar .sb-right i { font-size: 11px; color: var(--text-dim); }
+    .status-bar .sb-right i.on { color: var(--accent); text-shadow: 0 0 8px var(--glow); }
+    .status-bar .sb-battery { display: flex; align-items: center; gap: 4px; }
+    .status-bar .sb-hint {
+      position: absolute; left: 50%; top: 22px; transform: translateX(-50%);
+      width: 44px; height: 3px; border-radius: 999px;
+      background: rgba(255,255,255,0.22);
+      transition: width var(--dur) var(--ease), background var(--dur) var(--ease);
+    }
+    .status-bar:hover .sb-hint { width: 70px; background: rgba(255,255,255,0.4); }
 
-    /* ---------- Launcher (ecrã principal do sistema) ---------- */
+    /* ==============================================================
+       PAINEL DE CONTROLO RÁPIDO (arrastar da barra de estado)
+    ============================================================== */
+    .quick-panel {
+      position: absolute; top: 0; left: 0; right: 0;
+      z-index: 40;
+      background: rgba(10, 7, 22, 0.82);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      border-bottom: 1px solid var(--stroke);
+      transform: translateY(-105%);
+      transition: transform 380ms var(--ease);
+      padding: 40px 18px 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+    }
+    .quick-panel.open { transform: translateY(0); }
+    .quick-panel .qp-drag {
+      position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%);
+      width: 60px; height: 4px; border-radius: 999px;
+      background: rgba(255,255,255,0.35); cursor: grab;
+    }
+    .quick-panel .qp-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 14px;
+    }
+    .quick-panel .qp-header .qp-title { display: flex; flex-direction: column; }
+    .quick-panel .qp-header .qp-title strong { font-size: 13px; font-weight: 600; }
+    .quick-panel .qp-header .qp-title small { color: var(--text-mute); font-size: 10px; }
+    .qp-close {
+      background: var(--bg-elev); border: 1px solid var(--stroke); color: var(--text);
+      width: 28px; height: 28px; border-radius: 999px; cursor: pointer;
+    }
+
+    .qp-tiles {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+      margin-bottom: 14px;
+    }
+    .qp-tile {
+      background: var(--bg-elev); border: 1px solid var(--stroke);
+      border-radius: var(--r-md); padding: 10px;
+      display: flex; align-items: center; gap: 10px; cursor: pointer;
+      transition: transform var(--dur) var(--ease), background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+    }
+    .qp-tile:hover { background: var(--bg-elev-hover); }
+    .qp-tile:active { transform: scale(0.96); }
+    .qp-tile.on {
+      background: linear-gradient(135deg, rgba(167,139,250,0.28), rgba(124,58,237,0.15));
+      border-color: rgba(167,139,250,0.6);
+      box-shadow: 0 0 24px rgba(139,92,246,0.25);
+    }
+    .qp-tile .qp-ic {
+      width: 34px; height: 34px; border-radius: 10px;
+      background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center;
+      font-size: 14px; color: var(--text-dim); flex-shrink: 0;
+    }
+    .qp-tile.on .qp-ic { background: var(--accent); color: #fff; box-shadow: 0 0 12px var(--glow); }
+    .qp-tile .qp-txt { display: flex; flex-direction: column; min-width: 0; }
+    .qp-tile .qp-txt strong { font-size: 11px; font-weight: 600; }
+    .qp-tile .qp-txt small { color: var(--text-mute); font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .qp-slider {
+      background: var(--bg-elev); border: 1px solid var(--stroke);
+      border-radius: var(--r-md); padding: 10px 14px;
+      display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+    }
+    .qp-slider i { color: var(--text-dim); width: 16px; text-align: center; }
+    .qp-slider .qp-val { color: var(--text-dim); font-size: 10px; min-width: 30px; text-align: right; }
+    .qp-slider input[type="range"] { flex: 1; }
+
+    /* ==============================================================
+       ECRÃS
+    ============================================================== */
+    .screens { position: absolute; inset: 0; z-index: 5; }
+    .screen {
+      display: none; position: absolute; inset: 0;
+      padding: 40px 18px 14px; overflow: hidden;
+      animation: screenIn 320ms var(--ease);
+    }
+    .screen.active { display: flex; flex-direction: column; }
+    @keyframes screenIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.98); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* ---------- Launcher ---------- */
     #screen-launcher { justify-content: flex-start; }
-    .launcher-head { text-align: center; margin: 6px 0 14px; }
-    .launcher-head h1 { font-size: clamp(15px, 4.5vw, 26px); font-weight: 300; }
-    .launcher-head h1 span { font-weight: 700; color: var(--purple-accent); }
-    .launcher-head p { color: var(--text-muted); font-size: clamp(8px, 2vw, 12px); }
+    .launcher-head { text-align: left; margin: 4px 2px 14px; display: flex; align-items: baseline; justify-content: space-between; }
+    .launcher-head h1 {
+      font-size: clamp(18px, 4.5vw, 28px); font-weight: 300; letter-spacing: -0.02em;
+    }
+    .launcher-head h1 span {
+      font-weight: 700;
+      background: linear-gradient(120deg, var(--accent) 0%, var(--accent-cyan) 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .launcher-head p { color: var(--text-mute); font-size: 11px; margin-top: 2px; }
+    .launcher-date { text-align: right; }
+    .launcher-date b { font-size: 22px; font-weight: 500; display: block; }
+    .launcher-date small { color: var(--text-mute); font-size: 10px; text-transform: capitalize; }
 
     .launcher-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: clamp(10px, 3vw, 22px);
+      gap: clamp(10px, 2.4vw, 18px);
       align-content: start;
       flex: 1;
       min-height: 0;
+      overflow-y: auto;
+      padding: 2px 2px 8px;
     }
     @media (max-width: 420px), (max-height: 320px) {
       .launcher-grid { grid-template-columns: repeat(3, 1fr); }
     }
-    .app-item { display: flex; flex-direction: column; align-items: center; gap: 8px;
-                cursor: pointer; text-align: center; padding: 6px; border-radius: 16px; }
-    .app-item:active { background: var(--bg-card-hover); }
+
+    .app-item {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      cursor: pointer; text-align: center; padding: 6px 4px; border-radius: var(--r-lg);
+      animation: itemIn 420ms var(--ease) both;
+    }
+    @keyframes itemIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .app-item:active { transform: scale(0.94); }
+
     .app-icon {
-      width: clamp(40px, 12vw, 72px); height: clamp(40px, 12vw, 72px);
-      border-radius: 18px; background: var(--bg-card);
-      border: 1px solid var(--border-color);
+      width: clamp(46px, 12vw, 66px); height: clamp(46px, 12vw, 66px);
+      border-radius: 20px;
+      background: var(--bg-elev);
+      border: 1px solid var(--stroke);
+      backdrop-filter: blur(10px);
       display: flex; align-items: center; justify-content: center;
-      font-size: clamp(16px, 5vw, 30px);
-      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+      font-size: clamp(18px, 5vw, 26px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+      transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+      position: relative; overflow: hidden;
     }
-    .app-item span { font-size: clamp(8px, 2.1vw, 12px); }
-    .app-item small { color: var(--text-muted); font-size: clamp(6px, 1.6vw, 9px); }
+    .app-icon::after {
+      content: ""; position: absolute; inset: 0;
+      background: radial-gradient(120% 100% at 50% 0%, rgba(255,255,255,0.08), transparent 60%);
+      pointer-events: none;
+    }
+    .app-item:hover .app-icon { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(0,0,0,0.5), 0 0 22px var(--glow); }
+    .app-item span { font-size: 11px; font-weight: 500; color: var(--text); }
+    .app-item small { color: var(--text-mute); font-size: 9px; line-height: 1.2; }
 
-    /* ---------- Cabeçalho de aplicação ---------- */
-    .app-header { display: flex; align-items: center; gap: 12px; margin-bottom: clamp(8px, 2.5vw, 16px); }
+    /* ---------- Cabeçalho de app ---------- */
+    .app-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
     .back-btn {
-      background: var(--bg-card); border: 1px solid var(--border-color);
-      color: var(--text-main); width: 32px; height: 32px; border-radius: 10px;
-      cursor: pointer; font-size: 14px; flex-shrink: 0;
+      background: var(--bg-elev); border: 1px solid var(--stroke);
+      color: var(--text); width: 34px; height: 34px; border-radius: 12px;
+      cursor: pointer; font-size: 13px; flex-shrink: 0;
+      transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
     }
-    .back-btn:hover { background: var(--bg-card-hover); }
-    .app-header h2 { font-size: clamp(14px, 4vw, 22px); flex: 1; }
+    .back-btn:hover { background: var(--bg-elev-hover); }
+    .back-btn:active { transform: scale(0.9); }
+    .app-header h2 { font-size: clamp(15px, 3.8vw, 20px); flex: 1; font-weight: 600; letter-spacing: -0.01em; }
     .app-header .app-icon-mini {
-      width: 34px; height: 34px; border-radius: 10px; background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      display: flex; align-items: center; justify-content: center; font-size: 16px;
+      width: 34px; height: 34px; border-radius: 12px;
+      background: var(--bg-elev); border: 1px solid var(--stroke);
+      display: flex; align-items: center; justify-content: center; font-size: 15px;
     }
-    .app-body { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: clamp(8px, 2vw, 14px); }
+    .app-body { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 2px; }
+    .app-body::-webkit-scrollbar { width: 4px; }
+    .app-body::-webkit-scrollbar-thumb { background: var(--stroke-strong); border-radius: 999px; }
+    .launcher-grid::-webkit-scrollbar { width: 4px; }
+    .launcher-grid::-webkit-scrollbar-thumb { background: var(--stroke-strong); border-radius: 999px; }
 
-    /* ---------- Cartões genéricos ---------- */
-    .card { background: var(--bg-card); border: 1px solid var(--border-color);
-            border-radius: 16px; padding: clamp(10px, 2.5vw, 18px); }
-    .card-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .card-title strong { font-size: clamp(9px, 2.4vw, 14px); }
-    .card-title small { color: var(--text-muted); font-size: clamp(7px, 1.9vw, 11px); }
+    /* ---------- Cartões ---------- */
+    .card {
+      background: var(--bg-elev);
+      border: 1px solid var(--stroke);
+      backdrop-filter: blur(12px) saturate(140%);
+      border-radius: var(--r-lg);
+      padding: 14px 16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .card-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .card-title strong { font-size: 13px; font-weight: 600; }
+    .card-title small { color: var(--text-mute); font-size: 10px; }
 
     .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    .row + .row { margin-top: 10px; }
+    .row + .row { margin-top: 12px; }
     .row-label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-    .row-label strong { font-size: clamp(9px, 2.4vw, 14px); }
-    .row-label small { color: var(--text-muted); font-size: clamp(7px, 1.9vw, 11px); }
+    .row-label strong { font-size: 12px; font-weight: 500; }
+    .row-label small { color: var(--text-mute); font-size: 10px; }
 
+    /* ---------- Botões ---------- */
     .btn {
-      background: var(--purple-accent); color: #fff; border: none;
-      padding: clamp(5px, 1.4vw, 9px) clamp(10px, 2.5vw, 16px);
-      border-radius: 20px; cursor: pointer; font-size: inherit; white-space: nowrap;
+      background: linear-gradient(180deg, var(--accent) 0%, var(--accent-2) 100%);
+      color: #fff; border: 1px solid rgba(255,255,255,0.14);
+      padding: 8px 16px;
+      border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 500;
+      font-family: inherit;
+      white-space: nowrap;
+      box-shadow: 0 6px 18px rgba(124,58,237,0.35), inset 0 1px 0 rgba(255,255,255,0.18);
+      transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), filter var(--dur) var(--ease);
     }
-    .btn:active { filter: brightness(1.2); }
-    .btn.ghost { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); }
-    .btn.ok { background: var(--ok); color: #06251f; }
-    .btn.err { background: var(--err); }
-    .btn.sm { padding: 3px 10px; font-size: clamp(7px, 1.8vw, 11px); }
+    .btn:hover { filter: brightness(1.08); box-shadow: 0 8px 24px rgba(124,58,237,0.5), inset 0 1px 0 rgba(255,255,255,0.22); }
+    .btn:active { transform: scale(0.96); }
+    .btn.ghost {
+      background: var(--bg-elev); color: var(--text);
+      border: 1px solid var(--stroke); box-shadow: none;
+    }
+    .btn.ghost:hover { background: var(--bg-elev-hover); }
+    .btn.ok  { background: linear-gradient(180deg, #4ade80, #22c55e); box-shadow: 0 6px 18px rgba(34,197,94,0.35); }
+    .btn.err { background: linear-gradient(180deg, #fb7185, #ef4444); box-shadow: 0 6px 18px rgba(239,68,68,0.35); }
+    .btn.sm  { padding: 5px 12px; font-size: 10px; }
 
-    .switch { position: relative; width: clamp(32px, 8vw, 42px); height: clamp(18px, 4.6vw, 24px); flex-shrink: 0; }
+    /* ---------- Switch, select, range, input ---------- */
+    .switch { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
     .switch input { opacity: 0; width: 0; height: 0; }
-    .slider-toggle { position: absolute; cursor: pointer; inset: 0;
-                     background-color: rgba(255,255,255,0.15); transition: .2s; border-radius: 999px; }
-    .slider-toggle::before { position: absolute; content: ""; height: 78%; aspect-ratio: 1;
-                             left: 11%; bottom: 11%; background-color: white; transition: .2s; border-radius: 50%; }
-    input:checked + .slider-toggle { background-color: var(--purple-accent); }
-    input:checked + .slider-toggle::before { transform: translateX(90%); }
-
-    select.settings-select, input.settings-text, .range {
-      background: var(--bg-main); color: var(--text-main);
-      border: 1px solid var(--border-color); border-radius: 8px;
-      padding: 4px 8px; font-size: clamp(8px, 2.2vw, 13px); flex-shrink: 0; max-width: 55%;
+    .slider-toggle {
+      position: absolute; cursor: pointer; inset: 0;
+      background: rgba(255,255,255,0.12); border: 1px solid var(--stroke);
+      transition: background var(--dur) var(--ease); border-radius: 999px;
     }
-    input.settings-text { width: 130px; }
-    .range { -webkit-appearance: none; appearance: none; height: 6px; background: rgba(255,255,255,0.15);
-             border: none; border-radius: 999px; width: 120px; }
-    .range::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
-                                   background: var(--purple-accent); cursor: pointer; }
+    .slider-toggle::before {
+      position: absolute; content: ""; height: 18px; width: 18px;
+      left: 2px; top: 2px; background: #fff; transition: transform var(--dur) var(--ease); border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    }
+    input:checked + .slider-toggle {
+      background: linear-gradient(180deg, var(--accent), var(--accent-2));
+      border-color: transparent;
+      box-shadow: 0 0 12px var(--glow);
+    }
+    input:checked + .slider-toggle::before { transform: translateX(18px); }
 
-    /* ---------- Conversa (DC Assistant) ---------- */
-    .chat-log { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-    .msg { max-width: 85%; padding: 8px 12px; border-radius: 14px; font-size: clamp(8px, 2.2vw, 13px); }
-    .msg.user { align-self: flex-end; background: var(--purple-accent); color: #fff; border-bottom-right-radius: 4px; }
-    .msg.bot { align-self: flex-start; background: var(--bg-card); border: 1px solid var(--border-color); border-bottom-left-radius: 4px; }
-    .chat-input { display: flex; gap: 8px; }
+    select.dc-select, input.dc-input {
+      background: var(--bg-elev); color: var(--text);
+      border: 1px solid var(--stroke); border-radius: var(--r-sm);
+      padding: 6px 10px; font-size: 12px; font-family: inherit; flex-shrink: 0; max-width: 60%;
+      transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+      appearance: none; -webkit-appearance: none; -moz-appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23a78bfa' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+      background-repeat: no-repeat; background-position: right 10px center; padding-right: 26px;
+    }
+    input.dc-input {
+      background-image: none; padding-right: 10px;
+    }
+    select.dc-select:focus, input.dc-input:focus {
+      outline: none; border-color: var(--accent); background: var(--bg-elev-2);
+      box-shadow: 0 0 0 3px rgba(167,139,250,0.15);
+    }
+    select.dc-select option { background: var(--bg-deep); color: var(--text); }
+
+    .range { -webkit-appearance: none; appearance: none;
+      height: 6px; background: rgba(255,255,255,0.1);
+      border: none; border-radius: 999px; width: 120px; outline: none;
+    }
+    .range::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+      background: linear-gradient(180deg, var(--accent), var(--accent-2));
+      box-shadow: 0 0 12px var(--glow); cursor: pointer;
+      border: 2px solid #fff;
+    }
+    .range::-moz-range-thumb {
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--accent); cursor: pointer; border: 2px solid #fff;
+    }
+
+    /* ---------- Assistente ---------- */
+    .chat-log { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }
+    .msg { max-width: 82%; padding: 10px 14px; border-radius: 16px; font-size: 12px; line-height: 1.4;
+           animation: msgIn 320ms var(--ease); }
+    @keyframes msgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .msg.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff; border-bottom-right-radius: 4px;
+      box-shadow: 0 4px 14px rgba(124,58,237,0.35);
+    }
+    .msg.bot {
+      align-self: flex-start; background: var(--bg-elev); border: 1px solid var(--stroke);
+      border-bottom-left-radius: 4px;
+    }
+    .chat-input { display: flex; gap: 8px; margin-top: 8px; }
     .chat-input input {
-      flex: 1; background: var(--bg-card); border: 1px solid var(--border-color);
-      color: var(--text-main); border-radius: 20px; padding: 8px 14px; font-size: inherit; min-width: 0;
+      flex: 1; background: var(--bg-elev); border: 1px solid var(--stroke);
+      color: var(--text); border-radius: 999px; padding: 10px 16px; font-size: 12px; min-width: 0;
+      font-family: inherit;
     }
-    .quick-cmds { display: flex; flex-wrap: wrap; gap: 6px; }
-    .quick-cmds .btn { font-size: clamp(7px, 1.8vw, 11px); padding: 4px 10px; }
+    .chat-input input:focus { outline: none; border-color: var(--accent); background: var(--bg-elev-2); }
+    .quick-cmds { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+    .quick-cmds .btn { font-size: 10px; padding: 5px 12px; }
 
-    /* ---------- Tabs dentro de aplicação ---------- */
+    /* ---------- Tabs ---------- */
     .app-tabs { display: flex; gap: 6px; margin-bottom: 4px; }
     .app-tabs .tab-btn {
-      background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-muted);
-      padding: 5px 12px; border-radius: 12px; cursor: pointer; font-size: clamp(8px, 2vw, 12px);
+      background: var(--bg-elev); border: 1px solid var(--stroke); color: var(--text-dim);
+      padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 11px; font-family: inherit;
+      transition: all var(--dur) var(--ease);
     }
-    .app-tabs .tab-btn.active { background: var(--purple-accent); color: #fff; border-color: var(--purple-accent); }
+    .app-tabs .tab-btn:hover { color: var(--text); }
+    .app-tabs .tab-btn.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff; border-color: transparent;
+      box-shadow: 0 4px 14px rgba(124,58,237,0.4);
+    }
 
     /* ---------- Monitorização ---------- */
-    .sensor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(8px, 2vw, 14px); }
-    .sensor { text-align: center; padding: 12px 8px; }
-    .sensor .val { font-size: clamp(16px, 5vw, 30px); font-weight: 700; }
-    .sensor .lbl { color: var(--text-muted); font-size: clamp(7px, 1.9vw, 11px); }
-    .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 70px; margin-top: 8px; }
-    .bar-chart .bar { flex: 1; background: var(--purple-accent); border-radius: 4px 4px 0 0; opacity: .85; }
+    .sensor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .sensor { text-align: center; padding: 14px 8px; }
+    .sensor .val { font-size: clamp(18px, 5vw, 26px); font-weight: 700; letter-spacing: -0.02em; }
+    .sensor .lbl { color: var(--text-mute); font-size: 10px; margin-top: 2px; }
+    .bar-chart { display: flex; align-items: flex-end; gap: 5px; height: 70px; margin-top: 8px; }
+    .bar-chart .bar {
+      flex: 1;
+      background: linear-gradient(180deg, var(--accent), var(--accent-2));
+      border-radius: 4px 4px 0 0; opacity: .9;
+      box-shadow: 0 0 8px rgba(139,92,246,0.35);
+    }
 
     /* ---------- Alarmes ---------- */
-    .alarm-item { display: flex; align-items: center; gap: 10px; padding: 10px; }
-    .alarm-item .prio { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .prio.alta { background: var(--err); } .prio.media { background: var(--warn); } .prio.baixa { background: var(--ok); }
+    .alarm-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; }
+    .alarm-item .prio { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 8px currentColor; }
+    .prio.alta { background: var(--err); color: var(--err); }
+    .prio.media { background: var(--warn); color: var(--warn); }
+    .prio.baixa { background: var(--ok); color: var(--ok); }
 
-    /* ---------- Loja ---------- */
-    .store-cats { display: flex; flex-wrap: wrap; gap: 6px; }
-    .store-cats .cat-chip { background: var(--bg-card); border: 1px solid var(--border-color);
-                            padding: 4px 10px; border-radius: 12px; cursor: pointer;
-                            font-size: clamp(7px, 1.8vw, 11px); color: var(--text-muted); }
-    .store-cats .cat-chip.active { background: var(--purple-accent); color: #fff; border-color: var(--purple-accent); }
-    .store-item { display: flex; align-items: center; gap: 10px; }
-    .store-item .app-icon { width: 40px; height: 40px; border-radius: 12px; font-size: 16px; flex-shrink: 0; }
-    .store-meta { color: var(--text-muted); font-size: clamp(7px, 1.8vw, 10px); }
+    /* ---------- Chips ---------- */
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      background: var(--bg-elev); border: 1px solid var(--stroke);
+      padding: 5px 12px; border-radius: 999px; cursor: pointer;
+      font-size: 10px; color: var(--text-dim); transition: all var(--dur) var(--ease);
+    }
+    .chip:hover { color: var(--text); }
+    .chip.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff; border-color: transparent;
+      box-shadow: 0 4px 12px rgba(124,58,237,0.35);
+    }
 
-    /* ---------- Definições ---------- */
-    .settings-cats { display: flex; flex-wrap: wrap; gap: 6px; }
-    .settings-cats .cat-chip { background: var(--bg-card); border: 1px solid var(--border-color);
-                              padding: 4px 10px; border-radius: 12px; cursor: pointer;
-                              font-size: clamp(7px, 1.8vw, 11px); color: var(--text-muted); }
-    .settings-cats .cat-chip.active { background: var(--purple-accent); color: #fff; border-color: var(--purple-accent); }
+    .muted { color: var(--text-mute); }
+    .store-item { display: flex; align-items: center; gap: 12px; }
+    .store-item .app-icon { width: 44px; height: 44px; border-radius: 14px; font-size: 18px; flex-shrink: 0; }
+    .store-meta { color: var(--text-mute); font-size: 10px; }
+
+    /* ==============================================================
+       MODAL (unificado) — confirmações, escolhas, alertas
+    ============================================================== */
+    .modal-backdrop {
+      position: absolute; inset: 0; z-index: 60;
+      background: rgba(3, 1, 8, 0.7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity var(--dur) var(--ease);
+      padding: 20px;
+    }
+    .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+    .modal {
+      width: min(360px, 100%);
+      background: linear-gradient(180deg, rgba(20,14,36,0.98), rgba(10,7,22,0.98));
+      border: 1px solid var(--stroke-strong);
+      border-radius: var(--r-lg);
+      padding: 20px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 40px rgba(124,58,237,0.25);
+      transform: translateY(10px) scale(0.96); opacity: 0;
+      transition: transform var(--dur) var(--ease), opacity var(--dur) var(--ease);
+    }
+    .modal-backdrop.open .modal { transform: none; opacity: 1; }
+    .modal-icon {
+      width: 48px; height: 48px; border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: #fff; margin-bottom: 12px;
+      box-shadow: 0 8px 24px rgba(124,58,237,0.45);
+    }
+    .modal.err .modal-icon { background: linear-gradient(135deg, #fb7185, #ef4444); box-shadow: 0 8px 24px rgba(239,68,68,0.45); }
+    .modal.warn .modal-icon { background: linear-gradient(135deg, #fbbf24, #f59e0b); box-shadow: 0 8px 24px rgba(245,158,11,0.45); }
+    .modal.ok .modal-icon { background: linear-gradient(135deg, #4ade80, #22c55e); box-shadow: 0 8px 24px rgba(34,197,94,0.45); }
+    .modal h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; letter-spacing: -0.01em; }
+    .modal p { color: var(--text-dim); font-size: 12px; line-height: 1.5; margin-bottom: 16px; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+    /* ==============================================================
+       TOASTS (notificações no estilo do sistema)
+    ============================================================== */
+    .toast-stack {
+      position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
+      z-index: 55; display: flex; flex-direction: column; gap: 8px;
+      width: min(340px, 88%); pointer-events: none;
+    }
+    .toast {
+      background: rgba(20,14,36,0.9); backdrop-filter: blur(20px) saturate(140%);
+      -webkit-backdrop-filter: blur(20px) saturate(140%);
+      border: 1px solid var(--stroke-strong);
+      border-radius: 14px;
+      padding: 10px 14px;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+      transform: translateY(-8px); opacity: 0;
+      transition: transform 300ms var(--ease), opacity 300ms var(--ease);
+      pointer-events: auto;
+    }
+    .toast.show { transform: none; opacity: 1; }
+    .toast .toast-ic {
+      width: 28px; height: 28px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff; font-size: 12px; flex-shrink: 0;
+    }
+    .toast.ok .toast-ic  { background: linear-gradient(135deg, #4ade80, #22c55e); }
+    .toast.warn .toast-ic{ background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+    .toast.err .toast-ic { background: linear-gradient(135deg, #fb7185, #ef4444); }
+    .toast .toast-txt { display: flex; flex-direction: column; min-width: 0; }
+    .toast .toast-txt strong { font-size: 12px; font-weight: 600; }
+    .toast .toast-txt small { color: var(--text-mute); font-size: 10px; }
+
+    /* ==============================================================
+       SPLASH SCREEN
+    ============================================================== */
+    .splash {
+      position: absolute; inset: 0; z-index: 100;
+      background: radial-gradient(ellipse at center, #14092b 0%, #05030c 70%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 22px;
+      transition: opacity 700ms var(--ease), visibility 700ms var(--ease);
+    }
+    .splash.hide { opacity: 0; visibility: hidden; }
+    .splash .logo-wrap { position: relative; width: 96px; height: 96px; }
+    .splash .logo-ring {
+      position: absolute; inset: 0; border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: var(--accent);
+      border-right-color: var(--accent-cyan);
+      animation: spin 1.4s linear infinite;
+      filter: drop-shadow(0 0 12px var(--glow));
+    }
+    .splash .logo-ring.slow {
+      inset: 10px;
+      border-top-color: var(--accent-pink);
+      border-right-color: transparent;
+      animation-duration: 2.2s;
+      animation-direction: reverse;
+    }
+    .splash .logo-core {
+      position: absolute; inset: 20px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 24px; font-weight: 800; letter-spacing: -0.02em;
+      box-shadow: 0 0 40px var(--glow), inset 0 2px 8px rgba(255,255,255,0.25);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 30px var(--glow), inset 0 2px 8px rgba(255,255,255,0.25); }
+      50%      { transform: scale(1.05); box-shadow: 0 0 50px var(--glow), inset 0 2px 8px rgba(255,255,255,0.35); }
+    }
+    .splash .title {
+      font-size: 28px; font-weight: 300; letter-spacing: -0.02em;
+      opacity: 0; animation: splashFade 900ms var(--ease) 300ms forwards;
+    }
+    .splash .title b {
+      font-weight: 700;
+      background: linear-gradient(120deg, var(--accent) 0%, var(--accent-cyan) 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .splash .tag {
+      color: var(--text-mute); font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+      opacity: 0; animation: splashFade 900ms var(--ease) 600ms forwards;
+    }
+    @keyframes splashFade { to { opacity: 1; } }
 
     .hidden { display: none !important; }
-    .muted { color: var(--text-muted); }
   </style>
 </head>
 <body>
 
-  <div class="screen-container">
+  <div class="device" id="device">
+    <div class="noise"></div>
 
-    <!-- ============ LAUNCHER (ecrã principal do sistema) ============ -->
-    <div class="screen active" id="screen-launcher">
-      <div class="status-bar">
+    <!-- ==================== SPLASH SCREEN ==================== -->
+    <div class="splash" id="splash">
+      <div class="logo-wrap">
+        <div class="logo-ring"></div>
+        <div class="logo-ring slow"></div>
+        <div class="logo-core">DC</div>
+      </div>
+      <div class="title">DC <b>Assistente</b></div>
+      <div class="tag">a inicializar</div>
+    </div>
+
+    <!-- ==================== BARRA DE ESTADO (FIXA) ==================== -->
+    <div class="status-bar" id="status-bar">
+      <div class="sb-left">
+        <span class="dot"></span>
         <span id="sb-clock">--:--</span>
-        <div class="right">
-          <i class="fa-solid fa-wifi" id="sb-wifi"></i>
-          <i class="fa-solid fa-volume-high"></i>
-          <i class="fa-solid fa-battery-three-quarters"></i>
+      </div>
+      <div class="sb-right">
+        <i class="fa-solid fa-plane" id="sb-airplane" title="Modo avião"></i>
+        <i class="fa-solid fa-bluetooth-b" id="sb-bt" title="Bluetooth"></i>
+        <i class="fa-solid fa-wifi" id="sb-wifi" title="Wi-Fi"></i>
+        <i class="fa-solid fa-volume-high" id="sb-vol" title="Volume"></i>
+        <div class="sb-battery"><i class="fa-solid fa-battery-three-quarters"></i><span id="sb-batt">78%</span></div>
+      </div>
+      <div class="sb-hint"></div>
+    </div>
+
+    <!-- ==================== PAINEL DE CONTROLO RÁPIDO ==================== -->
+    <div class="quick-panel" id="quick-panel">
+      <div class="qp-header">
+        <div class="qp-title">
+          <strong id="qp-title">Painel rápido</strong>
+          <small id="qp-sub">Sábado, 24 de agosto</small>
         </div>
+        <button class="qp-close" onclick="toggleQuickPanel(false)"><i class="fa-solid fa-xmark"></i></button>
       </div>
-      <div class="launcher-head">
-        <h1 data-i18n="os.title">DC <span>Sistema</span></h1>
-        <p data-i18n="os.subtitle">Escolhe uma aplicação</p>
+      <div class="qp-tiles" id="qp-tiles"></div>
+      <div class="qp-slider">
+        <i class="fa-solid fa-sun"></i>
+        <input type="range" class="range" style="flex:1" id="qp-brightness" min="20" max="100" step="1">
+        <span class="qp-val" id="qp-brightness-val">80%</span>
       </div>
-      <div class="launcher-grid" id="launcher-grid"></div>
+      <div class="qp-slider">
+        <i class="fa-solid fa-volume-high"></i>
+        <input type="range" class="range" style="flex:1" id="qp-volume" min="0" max="100" step="1">
+        <span class="qp-val" id="qp-volume-val">60%</span>
+      </div>
+      <div class="qp-drag"></div>
     </div>
 
-    <!-- ============ AMBIENTE DE APLICAÇÃO (render dinâmico) ============ -->
-    <div class="screen" id="screen-app">
-      <div class="app-header">
-        <button class="back-btn" onclick="goHome()"><i class="fa-solid fa-chevron-left"></i></button>
-        <div class="app-icon-mini" id="app-header-icon"></div>
-        <h2 id="app-header-title"></h2>
+    <!-- ==================== TOASTS ==================== -->
+    <div class="toast-stack" id="toast-stack"></div>
+
+    <!-- ==================== MODAL ==================== -->
+    <div class="modal-backdrop" id="modal-backdrop">
+      <div class="modal" id="modal">
+        <div class="modal-icon" id="modal-icon"><i class="fa-solid fa-circle-info"></i></div>
+        <h3 id="modal-title"></h3>
+        <p id="modal-msg"></p>
+        <div class="modal-actions" id="modal-actions"></div>
       </div>
-      <div class="app-body" id="app-body"></div>
     </div>
 
+    <!-- ==================== ECRÃS ==================== -->
+    <div class="screens">
+
+      <!-- LAUNCHER -->
+      <div class="screen active" id="screen-launcher">
+        <div class="launcher-head">
+          <div>
+            <h1 data-i18n="os.title">DC <span>Sistema</span></h1>
+            <p data-i18n="os.subtitle">Escolhe uma aplicação</p>
+          </div>
+          <div class="launcher-date">
+            <b id="lh-time">--:--</b>
+            <small id="lh-date">--</small>
+          </div>
+        </div>
+        <div class="launcher-grid" id="launcher-grid"></div>
+      </div>
+
+      <!-- AMBIENTE DE APP -->
+      <div class="screen" id="screen-app">
+        <div class="app-header">
+          <button class="back-btn" onclick="goHome()"><i class="fa-solid fa-chevron-left"></i></button>
+          <div class="app-icon-mini" id="app-header-icon"></div>
+          <h2 id="app-header-title"></h2>
+        </div>
+        <div class="app-body" id="app-body"></div>
+      </div>
+
+    </div>
   </div>
 
   <script>
     /* ================================================================
-       REGISTO DE APLICAÇÕES (App Registry) — fonte de verdade do sistema.
-       A Loja e as Definições → Aplicações leem este mesmo registo.
+       APP REGISTRY
     ================================================================ */
     const APPS = [
-      { id: 'assistant',     name: 'DC Assistant',  icon: 'fa-solid fa-robot',        color: '#8b5cf6', desc: 'Assistente inteligente do sistema' },
-      { id: 'controlo',      name: 'Controlo',       icon: 'fa-solid fa-sliders',      color: '#36d6c0', desc: 'Comandos do sistema' },
-      { id: 'monitorizacao', name: 'Monitorização', icon: 'fa-solid fa-chart-line',    color: '#4cc9f0', desc: 'Tempo real e histórico' },
-      { id: 'alarmes',       name: 'Alarmes',        icon: 'fa-solid fa-bell',         color: '#ef4444', desc: 'Central de alarmes e eventos' },
-      { id: 'agenda',        name: 'Agenda',         icon: 'fa-regular fa-calendar-days', color: '#f59e0b', desc: 'Tarefas e eventos' },
-      { id: 'musica',        name: 'Música',         icon: 'fa-brands fa-spotify',    color: '#1DB954', desc: 'Entretenimento e multimédia' },
-      { id: 'loja',          name: 'Loja',           icon: 'fa-solid fa-store',        color: '#f72585', desc: 'App Store do sistema' },
-      { id: 'definicoes',    name: 'Definições',     icon: 'fa-solid fa-gear',         color: '#8e9aaf', desc: 'Definições globais do sistema' },
+      { id: 'assistant',    name: 'DC Assistant',   icon: 'fa-solid fa-robot',           color: '#a78bfa', desc: 'Assistente inteligente' },
+      { id: 'controlo',     name: 'Controlo',       icon: 'fa-solid fa-sliders',         color: '#22d3ee', desc: 'Comandos do sistema' },
+      { id: 'monitorizacao',name: 'Monitorização',  icon: 'fa-solid fa-chart-line',      color: '#60a5fa', desc: 'Tempo real e histórico' },
+      { id: 'alarmes',      name: 'Alarmes',        icon: 'fa-solid fa-bell',            color: '#f87171', desc: 'Central de alarmes' },
+      { id: 'agenda',       name: 'Agenda',         icon: 'fa-regular fa-calendar-days', color: '#fbbf24', desc: 'Tarefas e eventos' },
+      { id: 'musica',       name: 'Música',         icon: 'fa-brands fa-spotify',        color: '#1DB954', desc: 'Multimédia' },
+      { id: 'loja',         name: 'Loja',           icon: 'fa-solid fa-store',           color: '#f472b6', desc: 'App Store' },
+      { id: 'definicoes',   name: 'Definições',     icon: 'fa-solid fa-gear',            color: '#94a3b8', desc: 'Sistema' },
     ];
     const appById = id => APPS.find(a => a.id === id);
 
     /* ================================================================
-       ESTADO — definições separadas por âmbito:
-       · system.*  → definições GLOBAIS do sistema
-       · assistant.* → definições da APLICAÇÃO DC Assistant
+       ESTADO
     ================================================================ */
     const SYS_KEY = 'dc_system_settings';
     const ASST_KEY = 'dc_assistant_settings';
 
     const defaultSystem = {
-      deviceName: 'DC', language: 'pt', theme: 'dark', brightness: 80, volume: 60,
-      wifiOn: false, bluetoothOn: false, lockOn: false, showStats: true,
+      deviceName: 'DC', language: 'pt', theme: 'dark',
+      brightness: 80, volume: 60,
+      wifiOn: true, bluetoothOn: false, airplaneOn: false,
+      dndOn: false, flashOn: false, rotationOn: true,
+      lockOn: false, showStats: true,
     };
     const defaultAssistant = {
       name: 'DC', language: 'pt', voice: 'feminina', personality: 'amigável',
-      notifications: 'alto', allowCommands: true, integrations: ['spotify', 'agenda'],
+      notifications: 'alto', allowCommands: true, integrations: ['spotify','agenda'],
       model: 'mock', privacy: true,
     };
 
     const system = { ...defaultSystem, ...(JSON.parse(localStorage.getItem(SYS_KEY) || '{}')) };
     const assistant = { ...defaultAssistant, ...(JSON.parse(localStorage.getItem(ASST_KEY) || '{}')) };
-
-    function saveSystem()  { localStorage.setItem(SYS_KEY, JSON.stringify(system)); }
-    function saveAssistant(){ localStorage.setItem(ASST_KEY, JSON.stringify(assistant)); }
+    const saveSystem  = () => localStorage.setItem(SYS_KEY, JSON.stringify(system));
+    const saveAssistant = () => localStorage.setItem(ASST_KEY, JSON.stringify(assistant));
 
     /* ================================================================
-       i18n (nomes de aplicações e rótulos principais)
+       i18n
     ================================================================ */
     const translations = {
       pt: {
-        'os.title': 'DC <span>Sistema</span>',
-        'os.subtitle': 'Escolhe uma aplicação',
-        'back': 'Voltar',
-        'app.assistant': 'DC Assistant', 'app.controlo': 'Controlo',
-        'app.monitorizacao': 'Monitorização', 'app.alarmes': 'Alarmes',
-        'app.agenda': 'Agenda', 'app.musica': 'Música',
-        'app.loja': 'Loja', 'app.definicoes': 'Definições',
+        'os.title':'DC <span>Sistema</span>', 'os.subtitle':'Escolhe uma aplicação',
+        'app.assistant':'DC Assistant', 'app.controlo':'Controlo', 'app.monitorizacao':'Monitorização',
+        'app.alarmes':'Alarmes', 'app.agenda':'Agenda', 'app.musica':'Música',
+        'app.loja':'Loja', 'app.definicoes':'Definições',
       },
       en: {
-        'os.title': 'DC <span>System</span>',
-        'os.subtitle': 'Pick an app',
-        'back': 'Back',
-        'app.assistant': 'DC Assistant', 'app.controlo': 'Control',
-        'app.monitorizacao': 'Monitoring', 'app.alarmes': 'Alarms',
-        'app.agenda': 'Calendar', 'app.musica': 'Music',
-        'app.loja': 'Store', 'app.definicoes': 'Settings',
+        'os.title':'DC <span>System</span>', 'os.subtitle':'Pick an app',
+        'app.assistant':'DC Assistant','app.controlo':'Control','app.monitorizacao':'Monitoring',
+        'app.alarmes':'Alarms','app.agenda':'Calendar','app.musica':'Music',
+        'app.loja':'Store','app.definicoes':'Settings',
       },
     };
-    function t(key) {
-      const dict = translations[system.language] || translations.pt;
-      return dict[key] || key;
-    }
+    const t = k => (translations[system.language] || translations.pt)[k] || k;
     function applyI18n() {
       document.querySelectorAll('[data-i18n]').forEach(el => {
         const k = el.getAttribute('data-i18n');
@@ -319,11 +770,61 @@
     }
 
     /* ================================================================
-       NAVEGAÇÃO — Sistema Operativo → Aplicações → Funções
-       (sem números de tela; só openApp() / goHome())
+       MODAL — API unificada
+       showModal({type, title, message, actions:[{label, style, onClick}]})
+    ================================================================ */
+    function showModal({ type='info', title='', message='', actions=[{label:'OK', style:'', onClick:closeModal}] }) {
+      const bd = document.getElementById('modal-backdrop');
+      const m  = document.getElementById('modal');
+      const ic = document.getElementById('modal-icon');
+      m.className = 'modal ' + (type === 'error' ? 'err' : type === 'warn' ? 'warn' : type === 'ok' ? 'ok' : '');
+      const iconMap = { info:'fa-circle-info', ok:'fa-circle-check', warn:'fa-triangle-exclamation', error:'fa-circle-exclamation' };
+      ic.innerHTML = `<i class="fa-solid ${iconMap[type] || iconMap.info}"></i>`;
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('modal-msg').textContent = message;
+      const actionsEl = document.getElementById('modal-actions');
+      actionsEl.innerHTML = '';
+      actions.forEach(a => {
+        const b = document.createElement('button');
+        b.className = 'btn ' + (a.style || '');
+        b.textContent = a.label;
+        b.onclick = () => { closeModal(); a.onClick && a.onClick(); };
+        actionsEl.appendChild(b);
+      });
+      bd.classList.add('open');
+    }
+    function closeModal() { document.getElementById('modal-backdrop').classList.remove('open'); }
+    document.getElementById('modal-backdrop').addEventListener('click', e => {
+      if (e.target.id === 'modal-backdrop') closeModal();
+    });
+
+    /* ================================================================
+       TOAST — API unificada
+       toast({type, title, message, duration})
+    ================================================================ */
+    function toast({ type='info', title='', message='', duration=3200 }) {
+      const stack = document.getElementById('toast-stack');
+      const el = document.createElement('div');
+      const iconMap = { info:'fa-circle-info', ok:'fa-check', warn:'fa-triangle-exclamation', error:'fa-xmark' };
+      el.className = 'toast ' + (type === 'error' ? 'err' : type === 'ok' ? 'ok' : type === 'warn' ? 'warn' : '');
+      el.innerHTML = `
+        <div class="toast-ic"><i class="fa-solid ${iconMap[type] || iconMap.info}"></i></div>
+        <div class="toast-txt">
+          <strong>${title}</strong>
+          ${message ? `<small>${message}</small>` : ''}
+        </div>`;
+      stack.appendChild(el);
+      requestAnimationFrame(() => el.classList.add('show'));
+      setTimeout(() => {
+        el.classList.remove('show');
+        setTimeout(() => el.remove(), 320);
+      }, duration);
+    }
+
+    /* ================================================================
+       NAVEGAÇÃO
     ================================================================ */
     let currentApp = null;
-
     function openApp(id) {
       currentApp = id;
       const app = appById(id);
@@ -333,7 +834,6 @@
       document.getElementById('app-header-icon').innerHTML = `<i class="${app.icon}" style="color:${app.color}"></i>`;
       renderApp(id);
     }
-
     function goHome() {
       currentApp = null;
       document.getElementById('screen-app').classList.remove('active');
@@ -346,9 +846,10 @@
     function renderLauncher() {
       const grid = document.getElementById('launcher-grid');
       grid.innerHTML = '';
-      APPS.forEach(app => {
+      APPS.forEach((app, i) => {
         const item = document.createElement('div');
         item.className = 'app-item';
+        item.style.animationDelay = (i * 40) + 'ms';
         item.innerHTML = `
           <div class="app-icon" style="color:${app.color}"><i class="${app.icon}"></i></div>
           <span>${t('app.' + app.id)}</span>
@@ -359,7 +860,139 @@
     }
 
     /* ================================================================
-       RENDERIZAÇÃO DE CADA APLICAÇÃO
+       PAINEL RÁPIDO
+    ================================================================ */
+    const QUICK_TILES = [
+      { id: 'wifiOn',     label: 'Wi-Fi',       icon: 'fa-solid fa-wifi',            sub: () => system.wifiOn ? 'Ligado' : 'Desligado' },
+      { id: 'bluetoothOn',label: 'Bluetooth',   icon: 'fa-solid fa-bluetooth-b',     sub: () => system.bluetoothOn ? 'Ligado' : 'Desligado' },
+      { id: 'airplaneOn', label: 'Modo avião',  icon: 'fa-solid fa-plane',           sub: () => system.airplaneOn ? 'Ativo' : 'Inativo' },
+      { id: 'dndOn',      label: 'Não perturbe',icon: 'fa-solid fa-moon',            sub: () => system.dndOn ? 'Ativo' : 'Inativo' },
+      { id: 'flashOn',    label: 'Lanterna',    icon: 'fa-solid fa-flashlight',      sub: () => system.flashOn ? 'Ligada' : 'Desligada' },
+      { id: 'rotationOn', label: 'Rotação',     icon: 'fa-solid fa-arrows-rotate',   sub: () => system.rotationOn ? 'Auto' : 'Bloqueada' },
+    ];
+    function renderQuickTiles() {
+      const wrap = document.getElementById('qp-tiles');
+      wrap.innerHTML = '';
+      QUICK_TILES.forEach(tile => {
+        const on = !!system[tile.id];
+        const el = document.createElement('div');
+        el.className = 'qp-tile' + (on ? ' on' : '');
+        el.innerHTML = `
+          <div class="qp-ic"><i class="${tile.icon}"></i></div>
+          <div class="qp-txt"><strong>${tile.label}</strong><small>${tile.sub()}</small></div>`;
+        el.onclick = () => {
+          // Modo avião desliga rádios
+          if (tile.id === 'airplaneOn' && !system.airplaneOn) {
+            system.airplaneOn = true; system.wifiOn = false; system.bluetoothOn = false;
+          } else if (tile.id === 'airplaneOn' && system.airplaneOn) {
+            system.airplaneOn = false;
+          } else {
+            if (system.airplaneOn && (tile.id === 'wifiOn' || tile.id === 'bluetoothOn')) {
+              toast({ type:'warn', title:'Modo avião ativo', message:'Desliga o modo avião primeiro.' });
+              return;
+            }
+            system[tile.id] = !system[tile.id];
+          }
+          saveSystem(); renderQuickTiles(); updateStatusIcons();
+          toast({ type:'ok', title: tile.label, message: tile.sub() });
+        };
+        wrap.appendChild(el);
+      });
+    }
+
+    function toggleQuickPanel(force) {
+      const p = document.getElementById('quick-panel');
+      const willOpen = force !== undefined ? force : !p.classList.contains('open');
+      p.classList.toggle('open', willOpen);
+      if (willOpen) renderQuickTiles();
+    }
+
+    // Gesto — arrastar para baixo desde a barra de estado
+    (function setupSwipe() {
+      const sb = document.getElementById('status-bar');
+      const panel = document.getElementById('quick-panel');
+      let startY = null, dragging = false;
+
+      const onStart = (y) => { startY = y; dragging = true; };
+      const onMove = (y) => {
+        if (!dragging || startY === null) return;
+        const dy = y - startY;
+        if (dy > 30) { toggleQuickPanel(true); dragging = false; }
+      };
+      const onEnd = () => { dragging = false; startY = null; };
+
+      sb.addEventListener('mousedown', e => onStart(e.clientY));
+      window.addEventListener('mousemove', e => onMove(e.clientY));
+      window.addEventListener('mouseup', onEnd);
+      sb.addEventListener('touchstart', e => onStart(e.touches[0].clientY), { passive: true });
+      window.addEventListener('touchmove', e => onMove(e.touches[0].clientY), { passive: true });
+      window.addEventListener('touchend', onEnd);
+
+      // Clicar simples na barra também abre
+      sb.addEventListener('click', (e) => {
+        if (e.target.closest('.sb-hint') || e.target === sb || e.target.closest('.sb-left') || e.target.closest('.sb-right')) {
+          toggleQuickPanel();
+        }
+      });
+
+      // Arrastar o painel para cima para fechar
+      let pStartY = null;
+      panel.addEventListener('mousedown', e => { pStartY = e.clientY; });
+      window.addEventListener('mouseup', e => {
+        if (pStartY !== null && (pStartY - e.clientY) > 40) toggleQuickPanel(false);
+        pStartY = null;
+      });
+      panel.addEventListener('touchstart', e => { pStartY = e.touches[0].clientY; }, { passive: true });
+      window.addEventListener('touchend', e => {
+        if (pStartY !== null && e.changedTouches[0] && (pStartY - e.changedTouches[0].clientY) > 40) toggleQuickPanel(false);
+        pStartY = null;
+      });
+    })();
+
+    // Sliders do painel rápido
+    document.getElementById('qp-brightness').addEventListener('input', e => {
+      system.brightness = +e.target.value; saveSystem();
+      document.getElementById('qp-brightness-val').textContent = system.brightness + '%';
+      document.getElementById('device').style.filter = `brightness(${20 + system.brightness*0.8}%)`;
+    });
+    document.getElementById('qp-volume').addEventListener('input', e => {
+      system.volume = +e.target.value; saveSystem();
+      document.getElementById('qp-volume-val').textContent = system.volume + '%';
+      updateStatusIcons();
+    });
+
+    /* ================================================================
+       BARRA DE ESTADO — atualizar ícones conforme estado
+    ================================================================ */
+    function updateStatusIcons() {
+      document.getElementById('sb-wifi').classList.toggle('on', system.wifiOn && !system.airplaneOn);
+      document.getElementById('sb-bt').classList.toggle('on', system.bluetoothOn && !system.airplaneOn);
+      document.getElementById('sb-airplane').classList.toggle('on', system.airplaneOn);
+      document.getElementById('sb-airplane').style.display = system.airplaneOn ? '' : 'none';
+      const vol = document.getElementById('sb-vol');
+      vol.className = system.volume === 0 ? 'fa-solid fa-volume-xmark on'
+                     : system.volume < 40 ? 'fa-solid fa-volume-low on'
+                     : 'fa-solid fa-volume-high on';
+    }
+
+    /* ================================================================
+       RELÓGIO
+    ================================================================ */
+    function clockLoop() {
+      const d = new Date();
+      const hh = String(d.getHours()).padStart(2,'0');
+      const mm = String(d.getMinutes()).padStart(2,'0');
+      document.getElementById('sb-clock').textContent = `${hh}:${mm}`;
+      document.getElementById('lh-time').textContent = `${hh}:${mm}`;
+      document.getElementById('lh-date').textContent =
+        d.toLocaleDateString(system.language==='en'?'en-GB':'pt-PT', { weekday:'long', day:'numeric', month:'long' });
+      document.getElementById('qp-sub').textContent =
+        d.toLocaleDateString(system.language==='en'?'en-GB':'pt-PT', { weekday:'long', day:'numeric', month:'long' });
+      setTimeout(clockLoop, 1000);
+    }
+
+    /* ================================================================
+       RENDER DE APLICAÇÕES
     ================================================================ */
     function renderApp(id) {
       const body = document.getElementById('app-body');
@@ -372,7 +1005,7 @@
       (renderers[id] || (() => { body.innerHTML = '<div class="card muted">Em breve.</div>'; }))();
     }
 
-    /* ---------------- DC Assistant ---------------- */
+    /* -------- DC Assistant -------- */
     const chatHistory = [];
     function renderAssistant() {
       const body = document.getElementById('app-body');
@@ -382,28 +1015,26 @@
           <button class="tab-btn" data-tab="estado">Estado</button>
           <button class="tab-btn" data-tab="defs">Definições</button>
         </div>
-        <div id="asst-panel"></div>`;
+        <div id="asst-panel" style="flex:1;min-height:0;display:flex;flex-direction:column"></div>`;
       body.querySelectorAll('.tab-btn').forEach(b => b.onclick = () => {
         body.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
-        b.classList.add('active');
-        renderAssistantTab(b.dataset.tab);
+        b.classList.add('active'); renderAssistantTab(b.dataset.tab);
       });
       renderAssistantTab('conversa');
     }
-
     function renderAssistantTab(tab) {
       const panel = document.getElementById('asst-panel');
       if (tab === 'conversa') {
         panel.innerHTML = `
-          <div class="card" style="flex:1; display:flex; flex-direction:column; min-height:0;">
+          <div class="card" style="flex:1;display:flex;flex-direction:column;min-height:0;margin-top:8px;">
             <div class="chat-log" id="chat-log">
               <div class="msg bot">Olá! Sou a <b>${assistant.name}</b>. Em que posso ajudar?</div>
             </div>
-            <div class="quick-cmds" style="margin:8px 0;">
-              <button class="btn sm" onclick="assistantQuick('estado do sistema')">Estado do sistema</button>
-              <button class="btn sm" onclick="assistantQuick('análise de alarmes')">Análise de alarmes</button>
-              <button class="btn sm" onclick="assistantQuick('resumo de eventos')">Resumo de eventos</button>
-              <button class="btn sm" onclick="assistantQuick('sugestões')">Sugestões</button>
+            <div class="quick-cmds">
+              <button class="btn ghost sm" onclick="assistantQuick('estado do sistema')">Estado do sistema</button>
+              <button class="btn ghost sm" onclick="assistantQuick('análise de alarmes')">Alarmes</button>
+              <button class="btn ghost sm" onclick="assistantQuick('resumo de eventos')">Eventos</button>
+              <button class="btn ghost sm" onclick="assistantQuick('sugestões')">Sugestões</button>
             </div>
             <div class="chat-input">
               <input id="chat-text" placeholder="Escreve um comando..." onkeydown="if(event.key==='Enter')assistantSend()">
@@ -412,44 +1043,43 @@
           </div>`;
       } else if (tab === 'estado') {
         panel.innerHTML = `
-          <div class="card"><div class="card-title"><strong>Estado do sistema</strong><small>DC Assistant</small></div>
+          <div class="card" style="margin-top:8px"><div class="card-title"><strong>Estado do sistema</strong><small>DC Assistant</small></div>
             <div class="row"><span class="muted">Dispositivo</span><b>${system.deviceName}</b></div>
-            <div class="row"><span class="muted">Rede</span><b style="color:${system.wifiOn ? 'var(--ok)' : 'var(--err)'}">${system.wifiOn ? 'Ligada' : 'Desligada'}</b></div>
+            <div class="row"><span class="muted">Rede</span><b style="color:${system.wifiOn?'var(--ok)':'var(--err)'}">${system.wifiOn?'Ligada':'Desligada'}</b></div>
             <div class="row"><span class="muted">Temperatura</span><b>23.4 °C</b></div>
             <div class="row"><span class="muted">Humidade</span><b>61%</b></div>
             <div class="row"><span class="muted">Alarmes ativos</span><b style="color:var(--err)">1</b></div>
           </div>
-          <div class="card"><div class="card-title"><strong>Análise de alarmes</strong><small>sugestão automática</small></div>
+          <div class="card" style="margin-top:8px"><div class="card-title"><strong>Análise de alarmes</strong><small>sugestão automática</small></div>
             <p class="muted">Temperatura do controlo elevada (28.1 °C). Sugestão: verificar ventilação ou reduzir setpoint.</p>
           </div>`;
       } else {
-        // Definições da APLICAÇÃO DC Assistant (namespace assistant.*)
         panel.innerHTML = `
-          <div class="card"><div class="card-title"><strong>Definições do DC Assistant</strong><small>só esta aplicação</small></div>
+          <div class="card" style="margin-top:8px"><div class="card-title"><strong>Definições do DC Assistant</strong><small>só esta aplicação</small></div>
             <div class="row"><div class="row-label"><strong>Nome do assistente</strong></div>
-              <input class="settings-text" id="asst-name" value="${assistant.name}" onchange="assistant.name=this.value;saveAssistant()"></div>
+              <input class="dc-input" id="asst-name" value="${assistant.name}" onchange="assistant.name=this.value;saveAssistant();toast({type:'ok',title:'Guardado'})"></div>
             <div class="row"><div class="row-label"><strong>Idioma</strong></div>
-              <select class="settings-select" onchange="assistant.language=this.value;saveAssistant()">
+              <select class="dc-select" onchange="assistant.language=this.value;saveAssistant()">
                 <option value="pt" ${assistant.language==='pt'?'selected':''}>Português</option>
                 <option value="en" ${assistant.language==='en'?'selected':''}>English</option></select></div>
             <div class="row"><div class="row-label"><strong>Voz</strong></div>
-              <select class="settings-select" onchange="assistant.voice=this.value;saveAssistant()">
+              <select class="dc-select" onchange="assistant.voice=this.value;saveAssistant()">
                 <option value="feminina" ${assistant.voice==='feminina'?'selected':''}>Feminina</option>
                 <option value="masculina" ${assistant.voice==='masculina'?'selected':''}>Masculina</option></select></div>
             <div class="row"><div class="row-label"><strong>Personalidade</strong></div>
-              <select class="settings-select" onchange="assistant.personality=this.value;saveAssistant()">
+              <select class="dc-select" onchange="assistant.personality=this.value;saveAssistant()">
                 <option value="amigável" ${assistant.personality==='amigável'?'selected':''}>Amigável</option>
                 <option value="formal" ${assistant.personality==='formal'?'selected':''}>Formal</option>
                 <option value="discreta" ${assistant.personality==='discreta'?'selected':''}>Discreta</option></select></div>
             <div class="row"><div class="row-label"><strong>Nível de notificações</strong></div>
-              <select class="settings-select" onchange="assistant.notifications=this.value;saveAssistant()">
+              <select class="dc-select" onchange="assistant.notifications=this.value;saveAssistant()">
                 <option value="alto" ${assistant.notifications==='alto'?'selected':''}>Alto</option>
                 <option value="médio" ${assistant.notifications==='médio'?'selected':''}>Médio</option>
                 <option value="silencioso" ${assistant.notifications==='silencioso'?'selected':''}>Silencioso</option></select></div>
             <div class="row"><div class="row-label"><strong>Permitir executar comandos</strong></div>
               <label class="switch"><input type="checkbox" ${assistant.allowCommands?'checked':''} onchange="assistant.allowCommands=this.checked;saveAssistant()"><span class="slider-toggle"></span></label></div>
             <div class="row"><div class="row-label"><strong>Modelo de IA</strong></div>
-              <select class="settings-select" onchange="assistant.model=this.value;saveAssistant()">
+              <select class="dc-select" onchange="assistant.model=this.value;saveAssistant()">
                 <option value="mock" ${assistant.model==='mock'?'selected':''}>Mock (local)</option>
                 <option value="anthropic" ${assistant.model==='anthropic'?'selected':''}>Anthropic</option></select></div>
             <div class="row"><div class="row-label"><strong>Privacidade e histórico</strong></div>
@@ -457,25 +1087,19 @@
           </div>`;
       }
     }
-
-    function assistantQuick(cmd) {
-      document.getElementById('chat-text').value = cmd;
-      assistantSend();
-    }
+    function assistantQuick(cmd) { document.getElementById('chat-text').value = cmd; assistantSend(); }
     function assistantSend() {
       const input = document.getElementById('chat-text');
-      const text = input.value.trim();
-      if (!text) return;
+      const text = input.value.trim(); if (!text) return;
       const log = document.getElementById('chat-log');
       log.innerHTML += `<div class="msg user">${text}</div>`;
-      input.value = '';
-      chatHistory.unshift(text);
+      input.value = ''; chatHistory.unshift(text);
       setTimeout(() => {
         const replies = {
-          'estado do sistema': 'Tudo operacional. Rede ligada, temperatura 23.4 °C, 1 alarme ativo.',
-          'análise de alarmes': '1 alarme ativo (prioridade alta): temperatura elevada no controlo.',
-          'resumo de eventos': 'Hoje: 2 eventos na agenda, 0 manutenções agendadas.',
-          'sugestões': 'Sugiro baixar o setpoint do controlo em 1 °C e verificar a ventilação.',
+          'estado do sistema':'Tudo operacional. Rede ligada, temperatura 23.4 °C, 1 alarme ativo.',
+          'análise de alarmes':'1 alarme ativo (prioridade alta): temperatura elevada no controlo.',
+          'resumo de eventos':'Hoje: 2 eventos na agenda, 0 manutenções agendadas.',
+          'sugestões':'Sugiro baixar o setpoint do controlo em 1 °C e verificar a ventilação.',
         };
         const reply = replies[text.toLowerCase()] || `Recebido: "${text}". (Resposta simulada — liga ao Gateway na fase 0.5.)`;
         log.innerHTML += `<div class="msg bot">${reply}</div>`;
@@ -484,7 +1108,7 @@
       log.scrollTop = log.scrollHeight;
     }
 
-    /* ---------------- Controlo ---------------- */
+    /* -------- Controlo -------- */
     function renderControlo() {
       const body = document.getElementById('app-body');
       body.innerHTML = `
@@ -493,34 +1117,43 @@
           <div class="row"><span class="muted">Modo</span><b>Automático</b></div>
         </div>
         <div class="card"><div class="card-title"><strong>Comandos</strong></div>
-          <div class="row">
-            <button class="btn ok" onclick="this.style.filter='brightness(1.2)'">Ligar</button>
-            <button class="btn err" onclick="this.style.filter='brightness(1.2)'">Desligar</button>
-            <button class="btn ghost" onclick="this.style.filter='brightness(1.2)'">Manual</button>
-            <button class="btn ghost" onclick="this.style.filter='brightness(1.2)'">Automático</button>
+          <div class="row" style="flex-wrap:wrap;gap:8px">
+            <button class="btn ok"    onclick="confirmarAcao('Ligar equipamento?','Vai ativar o equipamento.','ok','Ligar','ok')">Ligar</button>
+            <button class="btn err"   onclick="confirmarAcao('Desligar equipamento?','Vai desativar o equipamento.','warn','Desligar','err')">Desligar</button>
+            <button class="btn ghost" onclick="toast({type:'ok',title:'Modo alterado',message:'Manual'})">Manual</button>
+            <button class="btn ghost" onclick="toast({type:'ok',title:'Modo alterado',message:'Automático'})">Automático</button>
           </div>
         </div>
-        <div class="card"><div class="card-title"><strong>Setpoints</strong><small>configuração da aplicação</small></div>
-          <div class="row"><div class="row-label"><strong>Temperatura</strong><small>${'21.0'} °C</small></div>
+        <div class="card"><div class="card-title"><strong>Setpoints</strong><small>configuração</small></div>
+          <div class="row"><div class="row-label"><strong>Temperatura</strong><small>21.0 °C</small></div>
             <input type="range" class="range" min="10" max="35" value="21" oninput="this.previousElementSibling.querySelector('small').textContent=this.value+'.0 °C'"></div>
-          <div class="row"><div class="row-label"><strong>Humidade</strong><small>${'55'}%</small></div>
+          <div class="row"><div class="row-label"><strong>Humidade</strong><small>55%</small></div>
             <input type="range" class="range" min="20" max="90" value="55" oninput="this.previousElementSibling.querySelector('small').textContent=this.value+'%'"></div>
-          <div class="row"><div class="row-label"><strong>Modos de funcionamento</strong></div>
-            <select class="settings-select"><option>Automático</option><option>Manual</option><option>Eco</option><option>Conforto</option></select></div>
+          <div class="row"><div class="row-label"><strong>Modo</strong></div>
+            <select class="dc-select"><option>Automático</option><option>Manual</option><option>Eco</option><option>Conforto</option></select></div>
         </div>`;
     }
+    function confirmarAcao(title, message, type, btnLabel, btnStyle) {
+      showModal({
+        type, title, message,
+        actions: [
+          { label: 'Cancelar', style: 'ghost' },
+          { label: btnLabel, style: btnStyle, onClick: () => toast({ type: 'ok', title: btnLabel + ' executado' }) },
+        ],
+      });
+    }
 
-    /* ---------------- Monitorização ---------------- */
+    /* -------- Monitorização -------- */
     function renderMonitorizacao() {
       const body = document.getElementById('app-body');
       body.innerHTML = `
         <div class="sensor-grid">
           <div class="card sensor"><div class="val" style="color:var(--warn)">23.4°</div><div class="lbl">Temperatura</div></div>
           <div class="card sensor"><div class="val" style="color:var(--ok)">61%</div><div class="lbl">Humidade</div></div>
-          <div class="card sensor"><div class="val" style="color:var(--purple-accent)">12.8V</div><div class="lbl">Tensão</div></div>
+          <div class="card sensor"><div class="val" style="color:var(--accent)">12.8V</div><div class="lbl">Tensão</div></div>
           <div class="card sensor"><div class="val" style="color:var(--ok)">OK</div><div class="lbl">Equipamentos</div></div>
         </div>
-        <div class="card"><div class="card-title"><strong>Temperatura (últimas horas)</strong><small>gráfico</small></div>
+        <div class="card"><div class="card-title"><strong>Temperatura</strong><small>últimas horas</small></div>
           <div class="bar-chart">
             ${[40,55,48,62,70,58,66,74,60,52,58,64].map(h => `<div class="bar" style="height:${h}%"></div>`).join('')}
           </div>
@@ -532,11 +1165,11 @@
         </div>`;
     }
 
-    /* ---------------- Alarmes ---------------- */
+    /* -------- Alarmes -------- */
     const alarmes = [
-      { prio: 'alta', titulo: 'Temperatura elevada no controlo', hora: '14:31', ativo: true },
-      { prio: 'media', titulo: 'Humidade fora do intervalo', hora: '13:05', ativo: false },
-      { prio: 'baixa', titulo: 'Manutenção programada', hora: '09:00', ativo: false },
+      { prio:'alta',  titulo:'Temperatura elevada no controlo', hora:'14:31', ativo:true },
+      { prio:'media', titulo:'Humidade fora do intervalo',      hora:'13:05', ativo:false },
+      { prio:'baixa', titulo:'Manutenção programada',           hora:'09:00', ativo:false },
     ];
     function renderAlarmes() {
       const body = document.getElementById('app-body');
@@ -548,35 +1181,32 @@
         <div id="alarm-panel"></div>`;
       body.querySelectorAll('.tab-btn').forEach(b => b.onclick = () => {
         body.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
-        b.classList.add('active');
-        renderAlarmTab(b.dataset.tab);
+        b.classList.add('active'); renderAlarmTab(b.dataset.tab);
       });
       renderAlarmTab('ativos');
     }
     function renderAlarmTab(tab) {
       const panel = document.getElementById('alarm-panel');
       const list = tab === 'ativos' ? alarmes.filter(a => a.ativo) : alarmes;
-      panel.innerHTML = `<div class="card">
-        ${list.length ? list.map(a => `
-          <div class="row alarm-item" style="margin:0;">
+      panel.innerHTML = `<div class="card" style="margin-top:8px">
+        ${list.length ? list.map((a,i) => `
+          <div class="row alarm-item" style="margin:0;${i>0?'border-top:1px solid var(--stroke);padding-top:12px;margin-top:6px':''}">
             <span class="prio ${a.prio}"></span>
-            <div class="row-label"><strong>${a.titulo}</strong><small>${a.hora} · prioridade ${a.prio}</small></div>
+            <div class="row-label" style="flex:1"><strong>${a.titulo}</strong><small>${a.hora} · prioridade ${a.prio}</small></div>
             ${a.ativo ? `<div style="display:flex;gap:6px">
-              <button class="btn sm ok" onclick="reconhecerAlarme(this)">Reconhecer</button>
-              <button class="btn sm ghost" onclick="silenciarAlarme(this)">Silenciar</button></div>`
+              <button class="btn sm ok"    onclick="showModal({type:'ok',title:'Reconhecer alarme?',message:'${a.titulo.replace(/'/g,'\\\'')}',actions:[{label:'Cancelar',style:'ghost'},{label:'Reconhecer',style:'ok',onClick:()=>toast({type:'ok',title:'Alarme reconhecido'})}]})">Reconhecer</button>
+              <button class="btn sm ghost" onclick="toast({type:'warn',title:'Alarme silenciado'})">Silenciar</button></div>`
               : `<span class="muted">reconhecido</span>`}
-          </div>`).join('')
-        : '<p class="muted">Sem alarmes ativos.</p>'}
+          </div>`).join('') : '<p class="muted">Sem alarmes ativos.</p>'}
       </div>`;
     }
-    function reconhecerAlarme(btn) { btn.closest('.row').querySelector('.muted').textContent = 'reconhecido'; btn.closest('div').remove(); }
-    function silenciarAlarme(btn) { btn.textContent = 'Silenciado'; }
 
-    /* ---------------- Agenda ---------------- */
+    /* -------- Agenda -------- */
     function renderAgenda() {
       const body = document.getElementById('app-body');
+      const hoje = new Date().toLocaleDateString(system.language==='en'?'en-GB':'pt-PT', { weekday:'long', day:'numeric', month:'long' });
       body.innerHTML = `
-        <div class="card"><div class="card-title"><strong>Hoje</strong><small>${new Date().toLocaleDateString('pt-PT',{weekday:'long', day:'numeric', month:'long'})}</small></div>
+        <div class="card"><div class="card-title"><strong>Hoje</strong><small>${hoje}</small></div>
           <div class="row"><span class="muted">09:00</span><span>Reunião de equipa</span></div>
           <div class="row"><span class="muted">11:30</span><span>Verificação de rotina</span></div>
           <div class="row"><span class="muted">15:00</span><span>Manutenção preventiva</span></div>
@@ -586,62 +1216,63 @@
           <div class="row"><span class="muted">Sábado</span><span>Backup do sistema</span></div>
         </div>
         <div class="card"><div class="card-title"><strong>Novo evento</strong></div>
-          <div class="row"><input class="settings-text" style="flex:1;max-width:none" placeholder="Título do evento...">
-            <button class="btn sm" onclick="this.textContent='Adicionado ✓'">Adicionar</button></div>
+          <div class="row" style="gap:8px"><input class="dc-input" id="new-ev" style="flex:1;max-width:none" placeholder="Título do evento...">
+            <button class="btn sm" onclick="(() => { const v=document.getElementById('new-ev').value.trim(); if(!v){toast({type:'warn',title:'Insere um título'});return;} document.getElementById('new-ev').value=''; toast({type:'ok',title:'Evento adicionado',message:v}); })()">Adicionar</button></div>
         </div>`;
     }
 
-    /* ---------------- Música ---------------- */
+    /* -------- Música -------- */
     let playing = false;
     function renderMusica() {
       const body = document.getElementById('app-body');
       body.innerHTML = `
         <div class="card" style="text-align:center;">
-          <div class="app-icon" style="width:90px;height:90px;margin:0 auto 10px;border-radius:20px;color:#1DB954;font-size:34px;"><i class="fa-brands fa-spotify"></i></div>
-          <h3>Blinding Lights</h3>
-          <p class="muted">The Weeknd</p>
-          <div class="row" style="justify-content:center;gap:24px;margin-top:12px;">
-            <i class="fa-solid fa-backward-step" style="cursor:pointer"></i>
-            <i class="fa-solid fa-circle-play" id="play-btn" style="cursor:pointer;font-size:26px;color:var(--purple-accent)" onclick="togglePlay()"></i>
-            <i class="fa-solid fa-forward-step" style="cursor:pointer"></i>
+          <div class="app-icon" style="width:96px;height:96px;margin:6px auto 10px;border-radius:22px;color:#1DB954;font-size:38px;"><i class="fa-brands fa-spotify"></i></div>
+          <h3 style="font-size:16px;font-weight:600">Blinding Lights</h3>
+          <p class="muted" style="font-size:11px;margin-top:2px">The Weeknd</p>
+          <div class="row" style="justify-content:center;gap:28px;margin-top:14px;">
+            <i class="fa-solid fa-backward-step" style="cursor:pointer;font-size:18px;color:var(--text-dim)" onclick="toast({type:'info',title:'Anterior'})"></i>
+            <i class="fa-solid fa-circle-play" id="play-btn" style="cursor:pointer;font-size:34px;color:var(--accent);filter:drop-shadow(0 0 12px var(--glow))" onclick="togglePlay()"></i>
+            <i class="fa-solid fa-forward-step" style="cursor:pointer;font-size:18px;color:var(--text-dim)" onclick="toast({type:'info',title:'Próxima'})"></i>
           </div>
         </div>
-        <div class="card"><div class="card-title"><strong>Volume</strong></div>
-          <div class="row"><input type="range" class="range" min="0" max="100" value="${system.volume}" style="flex:1" oninput="system.volume=this.value;saveSystem()"></div>
+        <div class="card"><div class="card-title"><strong>Volume</strong><small>${system.volume}%</small></div>
+          <div class="row"><input type="range" class="range" min="0" max="100" value="${system.volume}" style="flex:1" oninput="system.volume=+this.value;saveSystem();this.closest('.card').querySelector('small').textContent=this.value+'%';document.getElementById('qp-volume').value=this.value;document.getElementById('qp-volume-val').textContent=this.value+'%';updateStatusIcons()"></div>
         </div>
         <div class="card"><div class="card-title"><strong>Definições da aplicação</strong><small>só Música</small></div>
           <div class="row"><div class="row-label"><strong>Qualidade de streaming</strong></div>
-            <select class="settings-select"><option>Alta</option><option>Normal</option><option>Baixa</option></select></div>
+            <select class="dc-select"><option>Alta</option><option>Normal</option><option>Baixa</option></select></div>
         </div>`;
     }
     function togglePlay() {
       playing = !playing;
       const b = document.getElementById('play-btn');
       b.className = playing ? 'fa-solid fa-circle-pause' : 'fa-solid fa-circle-play';
+      b.style.cssText = 'cursor:pointer;font-size:34px;color:var(--accent);filter:drop-shadow(0 0 12px var(--glow))';
     }
 
-    /* ---------------- Loja ---------------- */
+    /* -------- Loja -------- */
     const STORE_CATALOG = [
-      { id: 'clima',   name: 'Clima',      icon: 'fa-solid fa-cloud-sun',     color: '#4cc9f0', cat: 'Utilitários',   desc: 'Meteorologia local', version: '1.0', size: '2.4 MB' },
-      { id: 'notas',   name: 'Notas',      icon: 'fa-regular fa-note-sticky', color: '#f72585', cat: 'Produtividade', desc: 'Notas rápidas',      version: '1.2', size: '1.1 MB' },
-      { id: 'chamadas', name: 'Chamadas',  icon: 'fa-solid fa-phone',         color: '#36d6c0', cat: 'Comunicação',   desc: 'Contactos e chamadas', version: '0.9', size: '3.0 MB' },
-      { id: 'ficheiros', name: 'Ficheiros', icon: 'fa-regular fa-folder-open', color: '#f59e0b', cat: 'Utilitários',  desc: 'Gestão de ficheiros', version: '1.0', size: '2.0 MB' },
-      { id: 'email',  name: 'E-mail',      icon: 'fa-regular fa-envelope',    color: '#ea4335', cat: 'Produtividade', desc: 'Correio eletrónico',  version: '1.1', size: '4.2 MB' },
-      { id: 'seguranca', name: 'Segurança', icon: 'fa-solid fa-shield-halved', color: '#ef4444', cat: 'Segurança',     desc: 'Câmaras e sensores',  version: '0.5', size: '5.6 MB' },
-      { id: 'rega',   name: 'Rega',        icon: 'fa-solid fa-droplet',       color: '#4cc9f0', cat: 'Automação',     desc: 'Controlo de rega',    version: '0.8', size: '1.8 MB' },
-      { id: 'relatorios', name: 'Relatórios', icon: 'fa-solid fa-chart-simple', color: '#8b5cf6', cat: 'Monitorização', desc: 'Relatórios do sistema', version: '1.0', size: '2.7 MB' },
+      { id:'clima',      name:'Clima',        icon:'fa-solid fa-cloud-sun',      color:'#4cc9f0', cat:'Utilitários',   desc:'Meteorologia local',     version:'1.0', size:'2.4 MB' },
+      { id:'notas',      name:'Notas',        icon:'fa-regular fa-note-sticky',  color:'#f472b6', cat:'Produtividade', desc:'Notas rápidas',          version:'1.2', size:'1.1 MB' },
+      { id:'chamadas',   name:'Chamadas',     icon:'fa-solid fa-phone',          color:'#22d3ee', cat:'Comunicação',   desc:'Contactos e chamadas',   version:'0.9', size:'3.0 MB' },
+      { id:'ficheiros',  name:'Ficheiros',    icon:'fa-regular fa-folder-open',  color:'#fbbf24', cat:'Utilitários',   desc:'Gestão de ficheiros',    version:'1.0', size:'2.0 MB' },
+      { id:'email',      name:'E-mail',       icon:'fa-regular fa-envelope',     color:'#ea4335', cat:'Produtividade', desc:'Correio eletrónico',     version:'1.1', size:'4.2 MB' },
+      { id:'seguranca',  name:'Segurança',    icon:'fa-solid fa-shield-halved',  color:'#f87171', cat:'Segurança',     desc:'Câmaras e sensores',     version:'0.5', size:'5.6 MB' },
+      { id:'rega',       name:'Rega',         icon:'fa-solid fa-droplet',        color:'#4cc9f0', cat:'Automação',     desc:'Controlo de rega',       version:'0.8', size:'1.8 MB' },
+      { id:'relatorios', name:'Relatórios',   icon:'fa-solid fa-chart-simple',   color:'#a78bfa', cat:'Monitorização', desc:'Relatórios do sistema',  version:'1.0', size:'2.7 MB' },
     ];
     const STORE_KEY = 'dc_store_installed';
     const storeInstalled = new Set(JSON.parse(localStorage.getItem(STORE_KEY) || '[]'));
-    function saveStore() { localStorage.setItem(STORE_KEY, JSON.stringify([...storeInstalled])); }
+    const saveStore = () => localStorage.setItem(STORE_KEY, JSON.stringify([...storeInstalled]));
     let storeCat = 'Todas';
 
     function renderLoja() {
       const body = document.getElementById('app-body');
       const cats = ['Todas', ...new Set(STORE_CATALOG.map(c => c.cat))];
       body.innerHTML = `
-        <div class="store-cats">${cats.map(c => `<span class="cat-chip ${c===storeCat?'active':''}" onclick="storeCat='${c}';renderLoja()">${c}</span>`).join('')}</div>
-        <div id="store-list"></div>`;
+        <div class="chips">${cats.map(c => `<span class="chip ${c===storeCat?'active':''}" onclick="storeCat='${c}';renderLoja()">${c}</span>`).join('')}</div>
+        <div id="store-list" style="display:flex;flex-direction:column;gap:10px"></div>`;
       const list = document.getElementById('store-list');
       const filtered = STORE_CATALOG.filter(c => storeCat === 'Todas' || c.cat === storeCat);
       filtered.forEach(app => {
@@ -660,18 +1291,27 @@
       });
     }
     function toggleStoreApp(id, btn) {
-      if (storeInstalled.has(id)) { storeInstalled.delete(id); btn.textContent = 'Instalar'; btn.classList.add('ghost'); }
-      else { storeInstalled.add(id); btn.textContent = 'Remover'; btn.classList.remove('ghost'); }
-      saveStore();
+      const app = STORE_CATALOG.find(a => a.id === id);
+      if (storeInstalled.has(id)) {
+        showModal({ type:'warn', title:'Remover aplicação?', message:`Vais remover "${app.name}" do sistema.`,
+          actions: [ { label:'Cancelar', style:'ghost' },
+            { label:'Remover', style:'err', onClick: () => {
+                storeInstalled.delete(id); saveStore(); renderLoja();
+                toast({ type:'ok', title:'Removida', message:app.name });
+            }} ]});
+      } else {
+        storeInstalled.add(id); saveStore(); btn.textContent = 'Remover'; btn.classList.add('ghost');
+        toast({ type:'ok', title:'Instalada', message:app.name });
+      }
     }
 
-    /* ---------------- Definições (globais do sistema) ---------------- */
+    /* -------- Definições -------- */
     const SET_CATS = ['Sistema', 'Interface', 'Rede', 'Segurança', 'Hardware', 'Aplicações'];
     let setCat = 'Sistema';
     function renderDefinicoes() {
       const body = document.getElementById('app-body');
       body.innerHTML = `
-        <div class="settings-cats">${SET_CATS.map(c => `<span class="cat-chip ${c===setCat?'active':''}" onclick="setCat='${c}';renderDefinicoes()">${c}</span>`).join('')}</div>
+        <div class="chips">${SET_CATS.map(c => `<span class="chip ${c===setCat?'active':''}" onclick="setCat='${c}';renderDefinicoes()">${c}</span>`).join('')}</div>
         <div id="set-panel"></div>`;
       renderSetCat();
     }
@@ -680,41 +1320,46 @@
       const rows = {
         'Sistema': `
           <div class="row"><div class="row-label"><strong>Nome do dispositivo</strong></div>
-            <input class="settings-text" value="${system.deviceName}" onchange="system.deviceName=this.value;saveSystem()"></div>
+            <input class="dc-input" value="${system.deviceName}" onchange="system.deviceName=this.value;saveSystem();toast({type:'ok',title:'Guardado'})"></div>
           <div class="row"><div class="row-label"><strong>Data e hora</strong></div><span class="muted">Automático (NTP)</span></div>
           <div class="row"><div class="row-label"><strong>Idioma</strong></div>
-            <select class="settings-select" onchange="system.language=this.value;saveSystem();applyI18n()">
+            <select class="dc-select" onchange="system.language=this.value;saveSystem();applyI18n()">
               <option value="pt" ${system.language==='pt'?'selected':''}>Português</option>
               <option value="en" ${system.language==='en'?'selected':''}>English</option></select></div>
           <div class="row"><div class="row-label"><strong>Região</strong></div><span class="muted">PT</span></div>
-          <div class="row"><button class="btn ghost sm">Reiniciar sistema</button><button class="btn err sm">Desligar sistema</button></div>
-          <div class="row"><span class="muted">Informações do dispositivo</span><span>ESP32-S3 · DC 0.3</span></div>`,
+          <div class="row" style="gap:8px">
+            <button class="btn ghost sm" onclick="showModal({type:'warn',title:'Reiniciar sistema?',message:'O ecrã ficará indisponível por alguns segundos.',actions:[{label:'Cancelar',style:'ghost'},{label:'Reiniciar',style:'',onClick:()=>{document.getElementById('splash').classList.remove('hide');setTimeout(()=>document.getElementById('splash').classList.add('hide'),1800);}}]})">Reiniciar sistema</button>
+            <button class="btn err sm" onclick="showModal({type:'error',title:'Desligar sistema?',message:'Vais desligar completamente a assistente DC.',actions:[{label:'Cancelar',style:'ghost'},{label:'Desligar',style:'err',onClick:()=>toast({type:'warn',title:'Sistema em suspensão'})}]})">Desligar sistema</button>
+          </div>
+          <div class="row"><span class="muted">Informações do dispositivo</span><span>ESP32-S3 · DC 0.4</span></div>`,
         'Interface': `
           <div class="row"><div class="row-label"><strong>Tema</strong></div>
-            <select class="settings-select" onchange="system.theme=this.value;saveSystem()">
+            <select class="dc-select" onchange="system.theme=this.value;saveSystem();toast({type:'ok',title:'Tema alterado'})">
               <option value="dark" ${system.theme==='dark'?'selected':''}>Escuro</option>
               <option value="light" ${system.theme==='light'?'selected':''}>Claro</option></select></div>
-          <div class="row"><div class="row-label"><strong>Brilho</strong></div>
-            <input type="range" class="range" min="20" max="100" value="${system.brightness}" oninput="system.brightness=this.value;saveSystem();document.body.style.filter='brightness('+this.value+'%)'"></div>
-          <div class="row"><div class="row-label"><strong>Volume</strong></div>
-            <input type="range" class="range" min="0" max="100" value="${system.volume}" oninput="system.volume=this.value;saveSystem()"></div>
-          <div class="row"><div class="row-label"><strong>Papel de parede</strong></div><button class="btn ghost sm">Escolher</button></div>
+          <div class="row"><div class="row-label"><strong>Brilho</strong><small>${system.brightness}%</small></div>
+            <input type="range" class="range" min="20" max="100" value="${system.brightness}" oninput="system.brightness=+this.value;saveSystem();this.previousElementSibling.querySelector('small').textContent=this.value+'%';document.getElementById('device').style.filter='brightness('+(20+this.value*0.8)+'%)';document.getElementById('qp-brightness').value=this.value;document.getElementById('qp-brightness-val').textContent=this.value+'%'"></div>
+          <div class="row"><div class="row-label"><strong>Volume</strong><small>${system.volume}%</small></div>
+            <input type="range" class="range" min="0" max="100" value="${system.volume}" oninput="system.volume=+this.value;saveSystem();this.previousElementSibling.querySelector('small').textContent=this.value+'%';document.getElementById('qp-volume').value=this.value;document.getElementById('qp-volume-val').textContent=this.value+'%';updateStatusIcons()"></div>
+          <div class="row"><div class="row-label"><strong>Papel de parede</strong></div><button class="btn ghost sm" onclick="toast({type:'info',title:'Em breve'})">Escolher</button></div>
           <div class="row"><div class="row-label"><strong>Tamanho dos textos</strong></div>
-            <select class="settings-select"><option>Normal</option><option>Grande</option></select></div>
+            <select class="dc-select"><option>Normal</option><option>Grande</option></select></div>
           <div class="row"><div class="row-label"><strong>Mostrar CPU / FPS</strong></div>
             <label class="switch"><input type="checkbox" ${system.showStats?'checked':''} onchange="system.showStats=this.checked;saveSystem()"><span class="slider-toggle"></span></label></div>`,
         'Rede': `
           <div class="row"><div class="row-label"><strong>Wi-Fi</strong></div>
-            <label class="switch"><input type="checkbox" ${system.wifiOn?'checked':''} onchange="system.wifiOn=this.checked;saveSystem();document.getElementById('sb-wifi').style.color=this.checked?'var(--ok)':'var(--purple-accent)'"><span class="slider-toggle"></span></label></div>
+            <label class="switch"><input type="checkbox" ${system.wifiOn?'checked':''} onchange="system.wifiOn=this.checked;saveSystem();updateStatusIcons();toast({type:'ok',title:'Wi-Fi',message:this.checked?'Ligado':'Desligado'})"><span class="slider-toggle"></span></label></div>
           <div class="row"><div class="row-label"><strong>Bluetooth</strong></div>
-            <label class="switch"><input type="checkbox" ${system.bluetoothOn?'checked':''} onchange="system.bluetoothOn=this.checked;saveSystem()"><span class="slider-toggle"></span></label></div>
+            <label class="switch"><input type="checkbox" ${system.bluetoothOn?'checked':''} onchange="system.bluetoothOn=this.checked;saveSystem();updateStatusIcons();toast({type:'ok',title:'Bluetooth',message:this.checked?'Ligado':'Desligado'})"><span class="slider-toggle"></span></label></div>
+          <div class="row"><div class="row-label"><strong>Modo avião</strong></div>
+            <label class="switch"><input type="checkbox" ${system.airplaneOn?'checked':''} onchange="system.airplaneOn=this.checked;if(this.checked){system.wifiOn=false;system.bluetoothOn=false;}saveSystem();updateStatusIcons();renderSetCat()"><span class="slider-toggle"></span></label></div>
           <div class="row"><div class="row-label"><strong>Ethernet</strong></div><span class="muted">Não ligado</span></div>
           <div class="row"><div class="row-label"><strong>Estado da ligação</strong></div><b style="color:${system.wifiOn?'var(--ok)':'var(--err)'}">${system.wifiOn?'Ligada':'Desligada'}</b></div>
           <div class="row"><div class="row-label"><strong>Configuração IP</strong></div><span class="muted">DHCP</span></div>`,
         'Segurança': `
           <div class="row"><div class="row-label"><strong>Bloqueio do sistema</strong></div>
             <label class="switch"><input type="checkbox" ${system.lockOn?'checked':''} onchange="system.lockOn=this.checked;saveSystem()"><span class="slider-toggle"></span></label></div>
-          <div class="row"><div class="row-label"><strong>PIN / palavra-passe</strong></div><button class="btn ghost sm">Definir</button></div>
+          <div class="row"><div class="row-label"><strong>PIN / palavra-passe</strong></div><button class="btn ghost sm" onclick="toast({type:'info',title:'Em breve'})">Definir</button></div>
           <div class="row"><div class="row-label"><strong>Utilizadores</strong></div><span class="muted">1</span></div>
           <div class="row"><div class="row-label"><strong>Sessões ativas</strong></div><span class="muted">1</span></div>`,
         'Hardware': `
@@ -723,35 +1368,40 @@
           <div class="row"><div class="row-label"><strong>Entradas e saídas</strong></div><span class="muted">4 livres</span></div>
           <div class="row"><div class="row-label"><strong>Relés</strong></div><span class="muted">0 ativos</span></div>
           <div class="row"><div class="row-label"><strong>Dispositivos conectados</strong></div><span class="muted">1</span></div>
-          <div class="row"><button class="btn ghost sm">Diagnóstico</button></div>`,
+          <div class="row"><button class="btn ghost sm" onclick="toast({type:'info',title:'Diagnóstico iniciado'})">Diagnóstico</button></div>`,
         'Aplicações': `
           <div class="row"><div class="row-label"><strong>Aplicações instaladas</strong></div><b>${APPS.length + storeInstalled.size}</b></div>
-          <div class="row"><div class="row-label"><strong>Permissões das aplicações</strong></div><button class="btn ghost sm">Gerir</button></div>
-          <div class="row"><div class="row-label"><strong>Notificações</strong></div><button class="btn ghost sm">Gerir</button></div>
+          <div class="row"><div class="row-label"><strong>Permissões das aplicações</strong></div><button class="btn ghost sm" onclick="toast({type:'info',title:'Em breve'})">Gerir</button></div>
+          <div class="row"><div class="row-label"><strong>Notificações</strong></div><button class="btn ghost sm" onclick="toast({type:'info',title:'Em breve'})">Gerir</button></div>
           <div class="row"><div class="row-label"><strong>Armazenamento</strong></div><span class="muted">1.2 GB livres</span></div>
-          <div class="row"><div class="row-label"><strong>Atualizações</strong></div><button class="btn ghost sm">Verificar</button></div>`,
+          <div class="row"><div class="row-label"><strong>Atualizações</strong></div><button class="btn ghost sm" onclick="toast({type:'ok',title:'Sistema atualizado'})">Verificar</button></div>`,
       };
-      panel.innerHTML = `<div class="card">${rows[setCat] || ''}</div>`;
-    }
-
-    /* ================================================================
-       RELÓGIO (placeholder até NTP/RTC)
-    ================================================================ */
-    function clockLoop() {
-      const el = document.getElementById('sb-clock');
-      const d = new Date();
-      el.textContent = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-      setTimeout(clockLoop, 1000);
+      panel.innerHTML = `<div class="card" style="margin-top:8px">${rows[setCat] || ''}</div>`;
     }
 
     /* ================================================================
        INIT
     ================================================================ */
-    renderLauncher();
-    applyI18n();
-    document.getElementById('sb-wifi').style.color = system.wifiOn ? 'var(--ok)' : 'var(--purple-accent)';
-    document.body.style.filter = `brightness(${system.brightness}%)`;
-    clockLoop();
+    function boot() {
+      renderLauncher();
+      applyI18n();
+      updateStatusIcons();
+      document.getElementById('qp-brightness').value = system.brightness;
+      document.getElementById('qp-brightness-val').textContent = system.brightness + '%';
+      document.getElementById('qp-volume').value = system.volume;
+      document.getElementById('qp-volume-val').textContent = system.volume + '%';
+      document.getElementById('device').style.filter = `brightness(${20 + system.brightness*0.8}%)`;
+      clockLoop();
+
+      // Splash — esconder após ~2.4s
+      setTimeout(() => {
+        document.getElementById('splash').classList.add('hide');
+        setTimeout(() => {
+          toast({ type:'ok', title:'Bem-vinda', message:`Olá, sou a ${assistant.name}` });
+        }, 500);
+      }, 2400);
+    }
+    boot();
   </script>
 </body>
 </html>
