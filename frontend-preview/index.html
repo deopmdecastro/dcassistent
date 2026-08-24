@@ -267,6 +267,44 @@
     .qp-slider .qp-val { color: var(--text-dim); font-size: 10px; min-width: 30px; text-align: right; }
     .qp-slider input[type="range"] { flex: 1; }
 
+    /* Widgets do painel rápido (música + agenda) */
+    .qp-widget {
+      background: var(--bg-elev); border: 1px solid var(--stroke);
+      border-radius: var(--r-md); padding: 12px; margin-bottom: 8px;
+      transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+    }
+    .qp-widget:hover { background: var(--bg-elev-hover); }
+    .qp-widget-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .qp-widget-head .qp-w-title {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 600; color: var(--text);
+    }
+    .qp-widget-head .qp-w-title i { color: var(--accent); font-size: 13px; }
+    .qp-widget-head .qp-w-sub { font-size: 9px; color: var(--text-mute); }
+    .qp-widget-body { font-size: 11px; color: var(--text-dim); }
+    .qp-music-row { display: flex; align-items: center; gap: 10px; }
+    .qp-music-art {
+      width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+      background: linear-gradient(135deg, #1DB954, #1ed760);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 16px;
+    }
+    .qp-music-info { flex: 1; min-width: 0; }
+    .qp-music-info strong { font-size: 12px; font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .qp-music-info small { font-size: 10px; color: var(--text-mute); }
+    .qp-music-controls { display: flex; align-items: center; gap: 12px; }
+    .qp-music-controls i { cursor: pointer; color: var(--text-dim); font-size: 16px; transition: color var(--dur) var(--ease), transform 120ms var(--ease); }
+    .qp-music-controls i:hover { color: var(--text); }
+    .qp-music-controls i:active { transform: scale(0.9); }
+    .qp-music-controls .qp-play { color: var(--accent); font-size: 22px; filter: drop-shadow(0 0 8px var(--glow)); }
+    .qp-agenda-item { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+    .qp-agenda-item + .qp-agenda-item { border-top: 1px solid var(--stroke); margin-top: 4px; padding-top: 8px; }
+    .qp-agenda-time { font-size: 10px; color: var(--accent); font-weight: 600; min-width: 36px; }
+    .qp-agenda-txt { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
     /* ==============================================================
        ECRÃS
     ============================================================== */
@@ -947,6 +985,8 @@
         <div class="qp-hidden-title">Tiles ocultos (toca para mostrar)</div>
         <div class="qp-hidden-list" id="qp-hidden-list"></div>
       </div>
+      <!-- Widgets do painel rápido -->
+      <div id="qp-widgets"></div>
       <div class="qp-slider">
         <i class="fa-solid fa-sun"></i>
         <input type="range" class="range" style="flex:1" id="qp-brightness" min="20" max="100" step="1">
@@ -1151,6 +1191,8 @@
     ================================================================ */
     const SYS_KEY = 'dc_system_settings';
     const ASST_KEY = 'dc_assistant_settings';
+    const USERS_KEY = 'dc_users';
+    const ACTIVE_USER_KEY = 'dc_active_user';
 
     const defaultSystem = {
       deviceName: 'DC', language: 'pt', theme: 'dark',
@@ -1160,6 +1202,7 @@
       lockOn: false, showStats: true,
       wallpaper: { type: 'aurora', value: '' },
       pin: '',
+      wakeWordOn: false,
       quickTileOrder: ['wifiOn','bluetoothOn','airplaneOn','dndOn','flashOn','rotationOn'],
       quickTileHidden: [],
     };
@@ -1175,6 +1218,109 @@
     const assistant = { ...defaultAssistant, ...(JSON.parse(localStorage.getItem(ASST_KEY) || '{}')) };
     const saveSystem  = () => localStorage.setItem(SYS_KEY, JSON.stringify(system));
     const saveAssistant = () => localStorage.setItem(ASST_KEY, JSON.stringify(assistant));
+
+    /* ================================================================
+       CONTAS E PERFIS — multi-utilizador com PIN e definições
+    ================================================================ */
+    const defaultUsers = [{ id: 'owner', name: 'Proprietário', pin: '', role: 'admin', color: '#a78bfa', icon: 'fa-solid fa-user-shield' }];
+    const users = JSON.parse(localStorage.getItem(USERS_KEY) || 'null') || defaultUsers;
+    let activeUserId = localStorage.getItem(ACTIVE_USER_KEY) || users[0].id;
+    const saveUsers = () => localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    const saveActiveUser = () => localStorage.setItem(ACTIVE_USER_KEY, activeUserId);
+    const activeUser = () => users.find(u => u.id === activeUserId) || users[0];
+    const userById = id => users.find(u => u.id === id);
+
+    function switchUser(userId) {
+      const u = userById(userId);
+      if (!u) return;
+      if (u.pin) {
+        showLockScreen('unlock', { hint: `PIN de ${u.name}`, allowCancel: true, onUnlock: () => {
+          activeUserId = userId; saveActiveUser();
+          toast({ type:'ok', title:'Perfil trocado', message: u.name });
+          if (currentApp === 'definicoes') renderSetCat();
+        }});
+      } else {
+        activeUserId = userId; saveActiveUser();
+        toast({ type:'ok', title:'Perfil trocado', message: u.name });
+        if (currentApp === 'definicoes') renderSetCat();
+      }
+    }
+
+    function addUser() {
+      showModal({ type:'info', title:'Novo utilizador', message:'', actions:[{label:'Cancelar',style:'ghost'}] });
+      const msg = document.getElementById('modal-msg');
+      msg.innerHTML = `
+        <div style="text-align:left">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Nome:</div>
+          <input class="dc-input" id="new-user-name" placeholder="Nome do utilizador" style="width:100%;max-width:none;margin-bottom:10px">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Tipo:</div>
+          <select class="dc-select" id="new-user-role" style="width:100%;max-width:none;margin-bottom:10px">
+            <option value="user">Utilizador</option>
+            <option value="admin">Administrador</option>
+          </select>
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Ícone:</div>
+          <select class="dc-select" id="new-user-icon" style="width:100%;max-width:none">
+            <option value="fa-solid fa-user">Utilizador</option>
+            <option value="fa-solid fa-user-tie">Profissional</option>
+            <option value="fa-solid fa-child">Criança</option>
+            <option value="fa-solid fa-user-astronaut">Convidado</option>
+          </select>
+        </div>`;
+      const actionsEl = document.getElementById('modal-actions');
+      const addBtn = document.createElement('button');
+      addBtn.className = 'btn';
+      addBtn.textContent = 'Adicionar';
+      addBtn.onclick = () => {
+        const name = document.getElementById('new-user-name').value.trim();
+        if (!name) { toast({type:'warn',title:'Insere um nome'}); return; }
+        const role = document.getElementById('new-user-role').value;
+        const icon = document.getElementById('new-user-icon').value;
+        const colors = ['#a78bfa','#22d3ee','#fbbf24','#f472b6','#34d399','#f87171'];
+        const id = 'u' + Date.now().toString(36);
+        users.push({ id, name, pin: '', role, color: colors[users.length % colors.length], icon });
+        saveUsers(); closeModal();
+        toast({type:'ok',title:'Utilizador criado',message:name});
+        if (currentApp === 'definicoes') renderSetCat();
+      };
+      actionsEl.appendChild(addBtn);
+      initCustomSelects(document.getElementById('modal'));
+    }
+
+    function deleteUser(userId) {
+      const u = userById(userId);
+      if (!u) return;
+      if (u.role === 'admin' && users.filter(x => x.role === 'admin').length <= 1) {
+        toast({type:'warn',title:'Não é possível remover',message:'Tem de haver pelo menos um administrador'});
+        return;
+      }
+      if (userId === activeUserId) {
+        toast({type:'warn',title:'Não é possível remover',message:'Troca de perfil primeiro'});
+        return;
+      }
+      showModal({ type:'warn', title:'Remover utilizador?', message:`Vais remover "${u.name}" e o seu PIN.`,
+        actions: [{label:'Cancelar',style:'ghost'},{label:'Remover',style:'err',onClick:()=>{
+          const idx = users.findIndex(x => x.id === userId);
+          if (idx >= 0) users.splice(idx, 1);
+          saveUsers(); toast({type:'ok',title:'Utilizador removido',message:u.name});
+          if (currentApp === 'definicoes') renderSetCat();
+        }}]
+      });
+    }
+
+    function setUserPin(userId) {
+      const u = userById(userId);
+      if (!u) return;
+      pinMode = 'setup'; pinBuffer = ''; pinSetupFirst = '';
+      pinOnUnlock = null;
+      pendingUserPin = userId;
+      document.getElementById('lock-title').textContent = `Definir PIN de ${u.name}`;
+      document.getElementById('lock-hint').textContent = '4 dígitos';
+      document.getElementById('pin-cancel').style.visibility = 'visible';
+      updateLockDots();
+      document.getElementById('lock-screen').classList.add('open');
+    }
+
+    let pendingUserPin = null;
 
     /* ================================================================
        i18n
@@ -1260,7 +1406,12 @@
     let currentApp = null;
     function openApp(id) {
       currentApp = id;
-      const app = appById(id);
+      let app = appById(id);
+      if (!app && id.startsWith('store_')) {
+        const sid = id.slice(6);
+        app = storeCatalog.find(a => a.id === sid) || STORE_FALLBACK.find(a => a.id === sid);
+      }
+      if (!app) return;
       document.getElementById('screen-launcher').classList.remove('active');
       document.getElementById('screen-app').classList.add('active');
       document.getElementById('app-header-title').textContent = app.name;
@@ -1288,6 +1439,21 @@
           <span>${t('app.' + app.id)}</span>
           <small>${app.desc}</small>`;
         item.onclick = () => openApp(app.id);
+        grid.appendChild(item);
+      });
+      // Apps instaladas da loja (ecrã "em breve")
+      const storeApps = storeCatalog.filter(a => storeInstalled.has(a.id));
+      storeApps.forEach((app, i) => {
+        const item = document.createElement('div');
+        item.className = 'app-item';
+        item.style.animationDelay = ((APPS.length + i) * 40) + 'ms';
+        item.innerHTML = `
+          <div class="app-icon" style="color:${app.color};position:relative"><i class="${app.icon}"></i>
+            <span style="position:absolute;top:-2px;right:-2px;font-size:7px;background:var(--warn);color:#000;padding:1px 5px;border-radius:999px;font-weight:700">EM BREVE</span>
+          </div>
+          <span>${app.name}</span>
+          <small>${app.desc || ''}</small>`;
+        item.onclick = () => openApp('store_' + app.id);
         grid.appendChild(item);
       });
     }
@@ -1430,7 +1596,7 @@
       const p = document.getElementById('quick-panel');
       const willOpen = force !== undefined ? force : !p.classList.contains('open');
       p.classList.toggle('open', willOpen);
-      if (willOpen) renderQuickTiles();
+      if (willOpen) { renderQuickTiles(); renderQuickWidgets(); }
     }
 
     // Gesto — arrastar para baixo desde a barra de estado
@@ -1522,6 +1688,7 @@
     ================================================================ */
     function renderApp(id) {
       const body = document.getElementById('app-body');
+      if (id.startsWith('store_')) { renderComingSoon(id.slice(6)); return; }
       const renderers = {
         assistant: renderAssistant, controlo: renderControlo, monitorizacao: renderMonitorizacao,
         alarmes: renderAlarmes, agenda: renderAgenda, musica: renderMusica,
@@ -1869,8 +2036,8 @@
       b.style.cssText = 'cursor:pointer;font-size:34px;color:var(--accent);filter:drop-shadow(0 0 12px var(--glow))';
     }
 
-    /* -------- Loja -------- */
-    const STORE_CATALOG = [
+    /* -------- Loja (manifest remoto) -------- */
+    const STORE_FALLBACK = [
       { id:'clima',      name:'Clima',        icon:'fa-solid fa-cloud-sun',      color:'#4cc9f0', cat:'Utilitários',   desc:'Meteorologia local',     version:'1.0', size:'2.4 MB' },
       { id:'notas',      name:'Notas',        icon:'fa-regular fa-note-sticky',  color:'#f472b6', cat:'Produtividade', desc:'Notas rápidas',          version:'1.2', size:'1.1 MB' },
       { id:'chamadas',   name:'Chamadas',     icon:'fa-solid fa-phone',          color:'#22d3ee', cat:'Comunicação',   desc:'Contactos e chamadas',   version:'0.9', size:'3.0 MB' },
@@ -1881,18 +2048,73 @@
       { id:'relatorios', name:'Relatórios',   icon:'fa-solid fa-chart-simple',   color:'#a78bfa', cat:'Monitorização', desc:'Relatórios do sistema',  version:'1.0', size:'2.7 MB' },
     ];
     const STORE_KEY = 'dc_store_installed';
+    const STORE_MANIFEST_KEY = 'dc_store_manifest_url';
     const storeInstalled = new Set(JSON.parse(localStorage.getItem(STORE_KEY) || '[]'));
     const saveStore = () => localStorage.setItem(STORE_KEY, JSON.stringify([...storeInstalled]));
+    let storeCatalog = STORE_FALLBACK;
     let storeCat = 'Todas';
+    let storeLoading = false;
+
+    function getStoreManifestUrl() {
+      return localStorage.getItem(STORE_MANIFEST_KEY) || '';
+    }
+
+    async function fetchStoreManifest() {
+      const url = getStoreManifestUrl();
+      if (!url) { storeCatalog = STORE_FALLBACK; return { ok: true, source: 'local', count: storeCatalog.length }; }
+      storeLoading = true;
+      try {
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 10000);
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(t);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!Array.isArray(data) && Array.isArray(data.apps)) data = data.apps;
+        if (!Array.isArray(data)) throw new Error('Formato inválido');
+        const valid = data.filter(a => a.id && a.name);
+        if (!valid.length) throw new Error('Manifest vazio');
+        storeCatalog = valid.map(a => ({
+          id: a.id, name: a.name,
+          icon: a.icon || 'fa-solid fa-cube',
+          color: a.color || '#a78bfa',
+          cat: a.cat || 'Outros',
+          desc: a.desc || '',
+          version: a.version || '1.0',
+          size: a.size || '—',
+        }));
+        return { ok: true, source: 'remote', count: storeCatalog.length };
+      } catch (err) {
+        storeCatalog = STORE_FALLBACK;
+        return { ok: false, err: (err && err.message) || 'erro', source: 'fallback' };
+      } finally {
+        storeLoading = false;
+      }
+    }
 
     function renderLoja() {
       const body = document.getElementById('app-body');
-      const cats = ['Todas', ...new Set(STORE_CATALOG.map(c => c.cat))];
+      const cats = ['Todas', ...new Set(storeCatalog.map(c => c.cat))];
+      const manifestUrl = getStoreManifestUrl();
       body.innerHTML = `
+        <div class="card" style="margin-top:8px">
+          <div class="card-title"><strong>Fonte da loja</strong><small>${manifestUrl ? 'Manifest remoto' : 'Catálogo local'}</small></div>
+          <div class="row"><div class="row-label"><strong>URL do manifest</strong><small>JSON com lista de apps disponíveis</small></div></div>
+          <div class="row" style="gap:6px">
+            <input class="dc-input" id="store-manifest-url" placeholder="https://.../manifest.json" style="flex:1;max-width:none" value="${manifestUrl}">
+            <button class="btn sm" onclick="updateStoreManifest()">Guardar</button>
+            <button class="btn ghost sm" onclick="refreshStore()"><i class="fa-solid fa-rotate-right"></i> Atualizar</button>
+          </div>
+          <div class="row"><span class="muted">${storeCatalog.length} apps disponíveis${storeLoading?' · a carregar...':''}</span></div>
+        </div>
         <div class="chips">${cats.map(c => `<span class="chip ${c===storeCat?'active':''}" onclick="storeCat='${c}';renderLoja()">${c}</span>`).join('')}</div>
         <div id="store-list" style="display:flex;flex-direction:column;gap:10px"></div>`;
       const list = document.getElementById('store-list');
-      const filtered = STORE_CATALOG.filter(c => storeCat === 'Todas' || c.cat === storeCat);
+      const filtered = storeCatalog.filter(c => storeCat === 'Todas' || c.cat === storeCat);
+      if (!filtered.length) {
+        list.innerHTML = '<div class="card muted" style="text-align:center">Nenhuma app encontrada.</div>';
+        return;
+      }
       filtered.forEach(app => {
         const installed = storeInstalled.has(app.id);
         const card = document.createElement('div');
@@ -1908,19 +2130,73 @@
         list.appendChild(card);
       });
     }
+
+    async function updateStoreManifest() {
+      const input = document.getElementById('store-manifest-url');
+      const url = input.value.trim();
+      localStorage.setItem(STORE_MANIFEST_KEY, url);
+      if (url) {
+        toast({ type:'info', title:'A carregar manifest...', message: url });
+        const r = await fetchStoreManifest();
+        if (r.ok) toast({ type:'ok', title:'Manifest carregado', message: `${r.count} apps de ${r.source}` });
+        else toast({ type:'warn', title:'Manifest indisponível', message: `${r.err} — a usar catálogo local` });
+      } else {
+        storeCatalog = STORE_FALLBACK;
+        toast({ type:'ok', title:'A usar catálogo local' });
+      }
+      renderLoja();
+    }
+
+    async function refreshStore() {
+      const r = await fetchStoreManifest();
+      if (r.ok && r.source === 'remote') toast({ type:'ok', title:'Loja atualizada', message: `${r.count} apps` });
+      else if (!getStoreManifestUrl()) toast({ type:'info', title:'Catálogo local', message: 'Define um URL de manifest para loja remota' });
+      else toast({ type:'warn', title:'Sem ligação', message: 'A usar catálogo local' });
+      renderLoja();
+    }
+
     function toggleStoreApp(id, btn) {
-      const app = STORE_CATALOG.find(a => a.id === id);
+      const app = storeCatalog.find(a => a.id === id);
       if (storeInstalled.has(id)) {
         showModal({ type:'warn', title:'Remover aplicação?', message:`Vais remover "${app.name}" do sistema.`,
           actions: [ { label:'Cancelar', style:'ghost' },
             { label:'Remover', style:'err', onClick: () => {
-                storeInstalled.delete(id); saveStore(); renderLoja();
+                storeInstalled.delete(id); saveStore(); renderLoja(); renderLauncher();
                 toast({ type:'ok', title:'Removida', message:app.name });
             }} ]});
       } else {
-        storeInstalled.add(id); saveStore(); btn.textContent = 'Remover'; btn.classList.add('ghost');
-        toast({ type:'ok', title:'Instalada', message:app.name });
+        storeInstalled.add(id); saveStore(); 
+        if (btn) { btn.textContent = 'Remover'; btn.classList.add('ghost'); }
+        toast({ type:'ok', title:'Instalada', message:`${app.name} — em breve disponível` });
+        renderLauncher();
       }
+    }
+
+    /* -------- Ecrã "Em breve" para apps instaladas da loja -------- */
+    function renderComingSoon(appId) {
+      const app = storeCatalog.find(a => a.id === appId) || STORE_FALLBACK.find(a => a.id === appId);
+      const body = document.getElementById('app-body');
+      if (!app) { body.innerHTML = '<div class="card muted">Aplicação não encontrada.</div>'; return; }
+      body.innerHTML = `
+        <div class="card" style="text-align:center;padding:30px 20px">
+          <div class="app-icon" style="width:80px;height:80px;margin:0 auto 16px;border-radius:24px;color:${app.color};font-size:32px"><i class="${app.icon}"></i></div>
+          <h3 style="font-size:18px;font-weight:600;margin-bottom:4px">${app.name}</h3>
+          <p class="muted" style="font-size:11px;margin-bottom:16px">${app.desc || 'Aplicação instalada a partir da loja'}</p>
+          <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:linear-gradient(135deg,rgba(167,139,250,0.18),rgba(124,58,237,0.1));border:1px solid rgba(167,139,250,0.4);border-radius:999px">
+            <i class="fa-solid fa-clock" style="color:var(--accent);font-size:14px;animation:spin 3s linear infinite"></i>
+            <span style="font-size:12px;font-weight:500">Em breve</span>
+          </div>
+          <p class="muted" style="font-size:10px;margin-top:14px;max-width:260px;margin-left:auto;margin-right:auto">Esta aplicação foi instalada a partir da loja e estará disponível numa próxima atualização do sistema DC.</p>
+          <div style="margin-top:16px;display:flex;justify-content:center;gap:8px">
+            <button class="btn ghost sm" onclick="showModal({type:'warn',title:'Remover ${app.name}?',message:'Vais remover esta aplicação do sistema.',actions:[{label:'Cancelar',style:'ghost'},{label:'Remover',style:'err',onClick:()=>{storeInstalled.delete('${app.id}');saveStore();renderLauncher();goHome();toast({type:'ok',title:'Removida',message:'${app.name}'})}}]})">Remover aplicação</button>
+          </div>
+        </div>
+        <div class="card"><div class="card-title"><strong>Detalhes</strong></div>
+          <div class="row"><span class="muted">Versão</span><span>v${app.version}</span></div>
+          <div class="row"><span class="muted">Tamanho</span><span>${app.size}</span></div>
+          <div class="row"><span class="muted">Categoria</span><span>${app.cat}</span></div>
+          <div class="row"><span class="muted">Estado</span><b style="color:var(--warn)">Em desenvolvimento</b></div>
+        </div>`;
     }
 
     /* -------- Definições -------- */
@@ -1949,6 +2225,8 @@
             <button class="btn ghost sm" onclick="showModal({type:'warn',title:'Reiniciar sistema?',message:'O ecrã ficará indisponível por alguns segundos.',actions:[{label:'Cancelar',style:'ghost'},{label:'Reiniciar',style:'',onClick:()=>{document.getElementById('splash').classList.remove('hide');setTimeout(()=>document.getElementById('splash').classList.add('hide'),1800);}}]})">Reiniciar sistema</button>
             <button class="btn err sm" onclick="showModal({type:'error',title:'Desligar sistema?',message:'Vais desligar completamente a assistente DC.',actions:[{label:'Cancelar',style:'ghost'},{label:'Desligar',style:'err',onClick:()=>toast({type:'warn',title:'Sistema em suspensão'})}]})">Desligar sistema</button>
           </div>
+          <div class="row"><div class="row-label"><strong>Palavra de ativação</strong><small>Diz "Olá DC" para abrir a assistente</small></div>
+            <label class="switch"><input type="checkbox" ${system.wakeWordOn?'checked':''} onchange="toggleWakeWord(this.checked)"><span class="slider-toggle"></span></label></div>
           <div class="row"><span class="muted">Informações do dispositivo</span><span>ESP32-S3 · DC 0.4</span></div>`,
         'Interface': `
           <div class="row"><div class="row-label"><strong>Tema</strong></div>
@@ -1984,7 +2262,22 @@
             </div></div>
           <div class="row"><div class="row-label"><strong>Bloquear agora</strong><small>ativa o ecrã de bloqueio</small></div>
             <button class="btn sm" onclick="lockNow()" ${system.pin?'':'disabled'}>Bloquear</button></div>
-          <div class="row"><div class="row-label"><strong>Utilizadores</strong></div><span class="muted">1</span></div>
+          <div class="row"><div class="row-label"><strong>Utilizador ativo</strong></div>
+            <span style="display:flex;align-items:center;gap:6px"><i class="${activeUser().icon}" style="color:${activeUser().color}"></i><b>${activeUser().name}</b></span></div>
+          <div class="row"><div class="row-label"><strong>Trocar perfil</strong><small>escolhe outro utilizador</small></div>
+            <select class="dc-select" onchange="if(this.value)switchUser(this.value)">
+              <option value="">Escolher...</option>
+              ${users.filter(u=>u.id!==activeUserId).map(u=>`<option value="${u.id}">${u.name}</option>`).join('')}</select></div>
+          <div class="row" style="flex-wrap:wrap;gap:6px"><div class="row-label" style="width:100%;margin-bottom:4px"><strong>Utilizadores do dispositivo</strong></div>
+            ${users.map(u=>`
+              <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg-elev);border:1px solid var(--stroke);border-radius:10px;width:100%">
+                <div style="width:30px;height:30px;border-radius:8px;background:${u.color}22;display:flex;align-items:center;justify-content:center"><i class="${u.icon}" style="color:${u.color};font-size:13px"></i></div>
+                <div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:600">${u.name}${u.id===activeUserId?' <span style=\"color:var(--accent)\">· ativo</span>':''}</div><div style="font-size:9px;color:var(--text-mute)">${u.role==='admin'?'Administrador':'Utilizador'} · ${u.pin?'PIN definido':'Sem PIN'}</div></div>
+                <button class="btn ghost sm" onclick="setUserPin('${u.id}')">${u.pin?'Alterar PIN':'Definir PIN'}</button>
+                ${u.id!==users[0].id?`<button class="btn ghost sm" style="color:var(--err)" onclick="deleteUser('${u.id}')"><i class="fa-solid fa-trash"></i></button>`:''}
+              </div>`).join('')}
+            <button class="btn ghost sm" onclick="addUser()" style="margin-top:4px"><i class="fa-solid fa-plus"></i> Adicionar utilizador</button>
+          </div>
           <div class="row"><div class="row-label"><strong>Sessões ativas</strong></div><span class="muted">1</span></div>`,
         'Hardware': `
           <div class="row"><div class="row-label"><strong>Estado do ESP32</strong></div><b style="color:var(--ok)">OK</b></div>
@@ -2147,11 +2440,26 @@
     function handlePinComplete() {
       if (pinMode === 'setup') {
         pinSetupFirst = pinBuffer; pinBuffer = '';
+        if (pendingUserPin) {
+          document.getElementById('lock-title').textContent = 'Confirma o PIN';
+        }
         showLockScreen('setup-confirm');
+        if (pendingUserPin) {
+          document.getElementById('lock-title').textContent = `Confirma o PIN de ${userById(pendingUserPin).name}`;
+        }
         return;
       }
       if (pinMode === 'setup-confirm') {
         if (pinBuffer === pinSetupFirst) {
+          if (pendingUserPin) {
+            const u = userById(pendingUserPin);
+            if (u) { u.pin = pinBuffer; saveUsers(); }
+            pendingUserPin = null;
+            hideLockScreen();
+            toast({ type:'ok', title:'PIN definido', message: u ? u.name : '' });
+            if (currentApp === 'definicoes') renderSetCat();
+            return;
+          }
           system.pin = pinBuffer; system.lockOn = true;
           saveSystem(); hideLockScreen();
           toast({ type:'ok', title:'PIN definido', message:'Bloqueio ativo no arranque' });
@@ -2163,8 +2471,11 @@
         }
         return;
       }
-      // unlock
-      if (pinBuffer === system.pin) {
+      // unlock — verifica PIN do sistema ou do utilizador ativo
+      const au = activeUser();
+      const sysPinMatch = system.pin && pinBuffer === system.pin;
+      const userPinMatch = au.pin && pinBuffer === au.pin;
+      if (sysPinMatch || userPinMatch) {
         pinBuffer=''; updateLockDots(); hideLockScreen();
         if (pinOnUnlock) { const cb = pinOnUnlock; pinOnUnlock = null; cb(); }
       } else {
@@ -2214,6 +2525,124 @@
     });
 
     /* ================================================================
+       WIDGETS DO PAINEL RÁPIDO (música + agenda)
+    ================================================================ */
+    const QP_MUSIC_TRACKS = [
+      { title: 'Blinding Lights', artist: 'The Weeknd' },
+      { title: 'Starboy', artist: 'The Weeknd' },
+      { title: 'Levitating', artist: 'Dua Lipa' },
+    ];
+    let qpMusicIdx = 0;
+    let qpMusicPlaying = false;
+
+    function renderQuickWidgets() {
+      const wrap = document.getElementById('qp-widgets');
+      if (!wrap) return;
+      const track = QP_MUSIC_TRACKS[qpMusicIdx];
+      const today = new Date().toLocaleDateString(system.language==='en'?'en-GB':'pt-PT', { weekday:'long', day:'numeric', month:'short' });
+      const agendaItems = [
+        { time: '09:00', text: 'Reunião de equipa' },
+        { time: '11:30', text: 'Verificação de rotina' },
+        { time: '15:00', text: 'Manutenção preventiva' },
+      ];
+      wrap.innerHTML = `
+        <div class="qp-widget">
+          <div class="qp-widget-head">
+            <div class="qp-w-title"><i class="fa-brands fa-spotify"></i> Música</div>
+            <small class="qp-w-sub" onclick="openApp('musica');toggleQuickPanel(false)" style="cursor:pointer">Abrir</small>
+          </div>
+          <div class="qp-music-row">
+            <div class="qp-music-art"><i class="fa-brands fa-spotify"></i></div>
+            <div class="qp-music-info"><strong>${track.title}</strong><small>${track.artist}</small></div>
+            <div class="qp-music-controls">
+              <i class="fa-solid fa-backward-step" onclick="qpMusicSkip(-1)"></i>
+              <i class="fa-solid ${qpMusicPlaying?'fa-circle-pause':'fa-circle-play'} qp-play" onclick="qpMusicToggle()"></i>
+              <i class="fa-solid fa-forward-step" onclick="qpMusicSkip(1)"></i>
+            </div>
+          </div>
+        </div>
+        <div class="qp-widget">
+          <div class="qp-widget-head">
+            <div class="qp-w-title"><i class="fa-regular fa-calendar-days"></i> Agenda</div>
+            <small class="qp-w-sub" onclick="openApp('agenda');toggleQuickPanel(false)" style="cursor:pointer">Abrir</small>
+          </div>
+          <div class="qp-widget-body">
+            ${agendaItems.map(a => `<div class="qp-agenda-item"><span class="qp-agenda-time">${a.time}</span><span class="qp-agenda-txt">${a.text}</span></div>`).join('')}
+          </div>
+        </div>`;
+    }
+
+    function qpMusicToggle() {
+      qpMusicPlaying = !qpMusicPlaying;
+      playing = qpMusicPlaying;
+      const pb = document.querySelector('.qp-music-controls .qp-play');
+      if (pb) { pb.className = `fa-solid ${qpMusicPlaying?'fa-circle-pause':'fa-circle-play'} qp-play`; }
+      const appPlay = document.getElementById('play-btn');
+      if (appPlay) { appPlay.className = qpMusicPlaying ? 'fa-solid fa-circle-pause' : 'fa-solid fa-circle-play'; }
+    }
+
+    function qpMusicSkip(dir) {
+      qpMusicIdx = (qpMusicIdx + dir + QP_MUSIC_TRACKS.length) % QP_MUSIC_TRACKS.length;
+      renderQuickWidgets();
+    }
+
+    /* ================================================================
+       WAKE WORD — "Olá DC" (Web Speech API)
+    ================================================================ */
+    let wakeRecognition = null;
+    let wakeListening = false;
+
+    function startWakeWord() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        toast({ type: 'error', title: 'Voz não suportada', message: 'Este navegador não suporta reconhecimento de voz' });
+        system.wakeWordOn = false; saveSystem();
+        return;
+      }
+      if (wakeListening) return;
+      wakeRecognition = new SR();
+      wakeRecognition.lang = 'pt-PT';
+      wakeRecognition.continuous = true;
+      wakeRecognition.interimResults = false;
+      wakeRecognition.onresult = (e) => {
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const transcript = e.results[i][0].transcript.toLowerCase().trim();
+          if (transcript.includes('olá dc') || transcript.includes('ola dc') || transcript.includes('ola d c')) {
+            if (currentApp !== 'assistant') {
+              openApp('assistant');
+              toast({ type: 'ok', title: 'Olá! DC acordou', message: 'Assistente ativada por voz' });
+            }
+          }
+        }
+      };
+      wakeRecognition.onerror = (e) => {
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+          toast({ type: 'error', title: 'Sem acesso ao microfone', message: 'Permite o microfone para usar a palavra de ativação' });
+          system.wakeWordOn = false; saveSystem();
+          wakeListening = false;
+        }
+      };
+      wakeRecognition.onend = () => {
+        wakeListening = false;
+        if (system.wakeWordOn) {
+          try { wakeRecognition.start(); wakeListening = true; } catch (_) {}
+        }
+      };
+      try { wakeRecognition.start(); wakeListening = true; } catch (_) {}
+    }
+
+    function stopWakeWord() {
+      if (wakeRecognition) { try { wakeRecognition.stop(); } catch (_) {} }
+      wakeListening = false;
+    }
+
+    function toggleWakeWord(on) {
+      system.wakeWordOn = on; saveSystem();
+      if (on) startWakeWord(); else stopWakeWord();
+      if (currentApp === 'definicoes') renderSetCat();
+    }
+
+    /* ================================================================
        INIT
     ================================================================ */
     function boot() {
@@ -2228,6 +2657,9 @@
       document.getElementById('qp-volume-val').textContent = system.volume + '%';
       document.getElementById('device').style.filter = `brightness(${20 + system.brightness*0.8}%)`;
       clockLoop();
+
+      // Iniciar wake word se ativo
+      if (system.wakeWordOn) setTimeout(() => startWakeWord(), 2800);
 
       // Splash — esconder após ~2.4s
       setTimeout(() => {
