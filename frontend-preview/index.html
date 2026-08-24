@@ -2,8 +2,8 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Echo Mind UI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>DC Assistant UI</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
     :root {
@@ -15,6 +15,7 @@
       --text-main: #ffffff;
       --text-muted: #a1a1aa;
       --border-color: rgba(255, 255, 255, 0.1);
+      --fs-base: clamp(10px, 2.6vw, 14px);
     }
 
     * {
@@ -25,36 +26,53 @@
       user-select: none;
     }
 
+    html, body {
+      height: 100%;
+    }
+
     body {
       background-color: #050308;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
+      min-height: 100dvh;
       color: var(--text-main);
+      font-size: var(--fs-base);
+      overflow: hidden;
     }
 
-    /* Enclosure Simulating the Display */
+    /* Enclosure Simulating the Display — fluid, keeps 5:3 aspect ratio like the real panel */
     .screen-container {
-      width: 800px;
-      height: 480px;
+      width: min(800px, 100vw);
+      aspect-ratio: 800 / 480;
+      max-height: 100dvh;
       background: var(--bg-main);
-      border-radius: 16px;
+      border-radius: clamp(0px, 2vw, 16px);
       border: 1px solid var(--border-color);
       box-shadow: 0 0 30px rgba(139, 92, 246, 0.15);
       position: relative;
       overflow: hidden;
     }
 
-    /* Screen Navigation Logic */
+    @media (max-width: 420px), (max-height: 320px) {
+      .screen-container {
+        aspect-ratio: auto;
+        width: 100vw;
+        height: 100dvh;
+        border-radius: 0;
+        border: none;
+      }
+    }
+
     .screen {
       display: none;
       width: 100%;
       height: 100%;
-      padding: 24px;
+      padding: clamp(8px, 3vw, 24px);
       position: absolute;
       top: 0;
       left: 0;
+      overflow-y: auto;
     }
 
     .screen.active {
@@ -62,16 +80,15 @@
       flex-direction: column;
     }
 
-    /* General Components */
     .nav-bar {
       position: absolute;
-      bottom: 12px;
-      right: 20px;
+      bottom: clamp(4px, 1.5vw, 12px);
+      right: clamp(6px, 2vw, 20px);
       display: flex;
-      gap: 8px;
+      gap: 6px;
       z-index: 100;
       background: rgba(0, 0, 0, 0.6);
-      padding: 4px 8px;
+      padding: 3px 6px;
       border-radius: 20px;
       border: 1px solid var(--border-color);
     }
@@ -81,8 +98,8 @@
       border: none;
       color: var(--text-muted);
       cursor: pointer;
-      font-size: 12px;
-      padding: 4px 8px;
+      font-size: clamp(9px, 2vw, 12px);
+      padding: 3px 7px;
       border-radius: 12px;
     }
 
@@ -98,12 +115,13 @@
     .top-tabs {
       display: flex;
       justify-content: flex-end;
-      gap: 20px;
+      gap: clamp(8px, 3vw, 20px);
+      flex-wrap: wrap;
     }
     .tab {
       color: var(--text-muted);
-      font-size: 14px;
       cursor: pointer;
+      white-space: nowrap;
     }
     .tab.active {
       color: #fff;
@@ -114,19 +132,23 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 12px;
       height: 100%;
+      flex: 1;
+      min-height: 0;
     }
     .hero-title {
-      font-size: 36px;
+      font-size: clamp(14px, 5.5vw, 36px);
       font-weight: 300;
+      line-height: 1.15;
     }
     .hero-title span {
       font-weight: 700;
       color: var(--purple-accent);
     }
     .avatar-ring {
-      width: 180px;
-      height: 180px;
+      width: clamp(48px, 22vw, 180px);
+      height: clamp(48px, 22vw, 180px);
       border-radius: 50%;
       border: 2px solid var(--purple-accent);
       box-shadow: 0 0 25px var(--purple-glow);
@@ -134,10 +156,11 @@
       align-items: center;
       justify-content: center;
       background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%);
+      flex-shrink: 0;
     }
     .avatar-ring img {
-      width: 160px;
-      height: 160px;
+      width: 88%;
+      height: 88%;
       border-radius: 50%;
       object-fit: cover;
     }
@@ -145,22 +168,30 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
     }
     .btn-start {
       background: var(--purple-accent);
       color: #fff;
       border: none;
-      padding: 10px 20px;
+      padding: clamp(6px, 1.6vw, 10px) clamp(10px, 3vw, 20px);
       border-radius: 20px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       cursor: pointer;
+      font-size: inherit;
+      white-space: nowrap;
     }
     .sys-stats {
-      font-size: 12px;
+      font-size: clamp(8px, 2vw, 12px);
       color: var(--text-muted);
       text-align: right;
+      transition: opacity .15s ease;
+    }
+    .sys-stats.hidden {
+      display: none;
     }
 
     /* Screen 2: Chat & Topics */
@@ -168,132 +199,276 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: clamp(8px, 3vw, 20px);
     }
     .user-info {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      min-width: 0;
     }
     .user-info img {
-      width: 36px;
-      height: 36px;
+      width: clamp(22px, 6vw, 36px);
+      height: clamp(22px, 6vw, 36px);
       border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .user-info span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .header-user i {
+      cursor: pointer;
     }
     .grid-2col {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      gap: clamp(6px, 2vw, 16px);
     }
     .action-card {
       background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: 16px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-    }
-    .action-card i {
-      font-size: 24px;
-      color: var(--purple-accent);
-    }
-    .topic-pills {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-top: 15px;
-    }
-    .pill {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 12px;
-      text-align: center;
-      font-size: 12px;
-    }
-
-    /* Screen 3: Voice Assessment */
-    .voice-wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-      height: 100%;
-    }
-    .wave-container {
-      width: 100%;
-      height: 150px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.3) 0%, transparent 70%);
-    }
-    .mic-btn-large {
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      background: var(--purple-accent);
-      border: none;
-      color: #fff;
-      font-size: 24px;
-      box-shadow: 0 0 20px var(--purple-glow);
-      cursor: pointer;
-    }
-
-    /* Screen 4: Apps Grid */
-    .app-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
-      margin-top: 20px;
-    }
-    .app-item {
+      padding: clamp(8px, 2.5vw, 20px);
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 8px;
       cursor: pointer;
+      text-align: center;
+    }
+    .action-card:active { background: var(--bg-card-hover); }
+    .action-card i {
+      font-size: clamp(14px, 3.5vw, 24px);
+      color: var(--purple-accent);
+    }
+    .topic-pills {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: clamp(4px, 1.5vw, 10px);
+      margin-top: 12px;
+    }
+    @media (max-width: 420px), (max-height: 320px) {
+      .topic-pills { grid-template-columns: repeat(2, 1fr); }
+    }
+    .pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: clamp(6px, 2vw, 12px);
+      text-align: center;
+      font-size: clamp(8px, 2vw, 12px);
+    }
+
+    /* Screen 3: Voice Assessment */
+    .voice-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .voice-header i { cursor: pointer; }
+    .voice-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      flex: 1;
+      min-height: 0;
+      gap: 8px;
+    }
+    .wave-container {
+      width: 100%;
+      flex: 1;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.3) 0%, transparent 70%);
+    }
+    .wave-container i {
+      font-size: clamp(24px, 8vw, 60px);
+      color: var(--purple-accent);
+      transition: transform .2s ease;
+    }
+    .wave-container.listening i {
+      animation: pulse 1s infinite ease-in-out;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: .85; }
+      50% { transform: scale(1.15); opacity: 1; }
+    }
+    #voice-transcript {
+      text-align: center;
+      font-size: clamp(9px, 2.4vw, 13px);
+      color: var(--text-muted);
+      max-width: 90%;
+      min-height: 1.4em;
+    }
+    .voice-controls {
+      display: flex;
+      align-items: center;
+      gap: clamp(16px, 8vw, 40px);
+      margin-bottom: 4px;
+    }
+    .voice-controls i { cursor: pointer; font-size: clamp(12px, 3vw, 16px); }
+    .mic-btn-large {
+      width: clamp(40px, 12vw, 64px);
+      height: clamp(40px, 12vw, 64px);
+      border-radius: 50%;
+      background: var(--purple-accent);
+      border: none;
+      color: #fff;
+      font-size: clamp(14px, 4vw, 24px);
+      box-shadow: 0 0 20px var(--purple-glow);
+      cursor: pointer;
+    }
+    .mic-btn-large.listening {
+      background: #ef4444;
+      box-shadow: 0 0 20px rgba(239, 68, 68, .5);
+    }
+
+    /* Screen 4: Apps Grid */
+    .apps-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .apps-header h2 { font-size: clamp(14px, 4vw, 22px); }
+    .apps-header i { cursor: pointer; margin-left: 12px; }
+    .app-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: clamp(8px, 3vw, 20px);
+      margin-top: clamp(8px, 3vw, 20px);
+      overflow-y: auto;
+    }
+    @media (max-width: 420px), (max-height: 320px) {
+      .app-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    .app-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      text-align: center;
     }
     .app-icon {
-      width: 64px;
-      height: 64px;
+      width: clamp(32px, 10vw, 64px);
+      height: clamp(32px, 10vw, 64px);
       border-radius: 16px;
       background: var(--bg-card);
       border: 1px solid var(--border-color);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 28px;
+      font-size: clamp(12px, 4vw, 28px);
+    }
+    .app-item span { font-size: clamp(7px, 2vw, 12px); }
+
+    /* Screen 5: Settings */
+    .settings-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .settings-header i { cursor: pointer; }
+    .settings-header h2 { font-size: clamp(14px, 4vw, 22px); }
+    .settings-list {
+      margin-top: clamp(10px, 3vw, 20px);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(6px, 2vw, 14px);
+      overflow-y: auto;
+    }
+    .settings-row {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: clamp(8px, 2.5vw, 16px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .settings-row-label {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .settings-row-label strong { font-size: clamp(9px, 2.4vw, 14px); }
+    .settings-row-label small { color: var(--text-muted); font-size: clamp(7px, 1.9vw, 11px); }
+
+    .switch {
+      position: relative;
+      width: clamp(32px, 8vw, 42px);
+      height: clamp(18px, 4.6vw, 24px);
+      flex-shrink: 0;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider-toggle {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: rgba(255,255,255,0.15);
+      transition: .2s;
+      border-radius: 999px;
+    }
+    .slider-toggle::before {
+      position: absolute;
+      content: "";
+      height: 78%;
+      aspect-ratio: 1;
+      left: 11%;
+      bottom: 11%;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+    }
+    input:checked + .slider-toggle {
+      background-color: var(--purple-accent);
+    }
+    input:checked + .slider-toggle::before {
+      transform: translateX(90%);
+    }
+
+    select.settings-select {
+      background: var(--bg-main);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: clamp(8px, 2.2vw, 13px);
+      flex-shrink: 0;
     }
   </style>
 </head>
 <body>
 
   <div class="screen-container">
-    
+
     <!-- Screen 1: Home -->
     <div class="screen active" id="screen-1">
       <div class="top-tabs">
-        <span class="tab active">Profile</span>
-        <span class="tab">Analytics</span>
-        <span class="tab">Shop</span>
+        <span class="tab active" data-i18n="tab.profile">Profile</span>
+        <span class="tab" data-i18n="tab.analytics">Analytics</span>
+        <span class="tab" data-i18n="tab.shop">Shop</span>
       </div>
       <div class="hero-section">
         <div>
-          <h1 class="hero-title">Meet the<br><span>Echo Mind!</span></h1>
+          <h1 class="hero-title" data-i18n-html="home.title">Meet the<br><span>DC Assistant!</span></h1>
         </div>
         <div class="avatar-ring">
           <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300" alt="Avatar">
         </div>
       </div>
       <div class="home-footer">
-        <button class="btn-start" onclick="switchScreen(2)">Get Started <i class="fa-solid fa-chevron-right"></i></button>
-        <div class="sys-stats">
-          <p>100 FPS</p>
-          <p>87% CPU</p>
+        <button class="btn-start" onclick="switchScreen(2)"><span data-i18n="home.start">Get Started</span> <i class="fa-solid fa-chevron-right"></i></button>
+        <div class="sys-stats" id="sys-stats">
+          <p><span id="stat-fps">--</span> FPS</p>
+          <p><span id="stat-cpu">--</span>% CPU</p>
         </div>
       </div>
     </div>
@@ -311,51 +486,48 @@
         <div style="display: flex; gap: 10px;">
           <div class="action-card" style="flex: 1;" onclick="switchScreen(3)">
             <i class="fa-regular fa-comment"></i>
-            <span>Chat with Echo Mind</span>
+            <span data-i18n="chat.withEcho">Chat with DC</span>
           </div>
           <div class="action-card" style="flex: 1;" onclick="switchScreen(3)">
             <i class="fa-solid fa-microphone"></i>
-            <span>Talk with Echo Mind</span>
+            <span data-i18n="chat.talkEcho">Talk with DC</span>
           </div>
         </div>
-        <div style="background: var(--bg-card); border-radius: 16px; padding: 16px;">
-          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 10px;">
-            <span>History</span>
-            <span style="color: var(--purple-accent);">View All</span>
+        <div style="background: var(--bg-card); border-radius: 16px; padding: 12px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span data-i18n="chat.history">History</span>
+            <span style="color: var(--purple-accent);" data-i18n="chat.viewAll">View All</span>
           </div>
-          <p style="font-size: 13px;">How to create IoT app user flow?</p>
-          <span style="font-size: 10px; color: var(--text-muted);">19/02/2024</span>
+          <p id="last-history-item" data-i18n="chat.emptyHistory">No conversations yet.</p>
         </div>
       </div>
-      <div style="margin-top: 20px;">
-        <span style="font-size: 14px;">Topics</span>
+      <div style="margin-top: 16px;">
+        <span data-i18n="chat.topics">Topics</span>
         <div class="topic-pills">
-          <div class="pill"><i class="fa-solid fa-chart-line"></i><br>Finance</div>
-          <div class="pill"><i class="fa-solid fa-shield-halved"></i><br>Health</div>
-          <div class="pill"><i class="fa-solid fa-code"></i><br>Develop</div>
-          <div class="pill"><i class="fa-solid fa-building"></i><br>Business</div>
+          <div class="pill"><i class="fa-solid fa-chart-line"></i><br><span data-i18n="topic.finance">Finance</span></div>
+          <div class="pill"><i class="fa-solid fa-shield-halved"></i><br><span data-i18n="topic.health">Health</span></div>
+          <div class="pill"><i class="fa-solid fa-code"></i><br><span data-i18n="topic.develop">Develop</span></div>
+          <div class="pill"><i class="fa-solid fa-building"></i><br><span data-i18n="topic.business">Business</span></div>
         </div>
       </div>
     </div>
 
     <!-- Screen 3: Voice Assessment -->
     <div class="screen" id="screen-3">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <i class="fa-solid fa-chevron-left" onclick="switchScreen(2)" style="cursor: pointer;"></i>
-        <span>Voice Assessment</span>
-        <div></div>
+      <div class="voice-header">
+        <i class="fa-solid fa-chevron-left" onclick="switchScreen(2)"></i>
+        <span data-i18n="voice.title">Voice Assessment</span>
+        <div style="width:1em"></div>
       </div>
       <div class="voice-wrapper">
-        <p style="color: var(--text-muted); margin-top: 10px;">Go ahead, I'm listening...</p>
-        <div class="wave-container">
-          <i class="fa-solid fa-wave-square" style="font-size: 60px; color: var(--purple-accent);"></i>
+        <p id="voice-status" style="color: var(--text-muted); margin-top: 6px;" data-i18n="voice.idle">Tap the mic to talk</p>
+        <div class="wave-container" id="wave-container">
+          <i class="fa-solid fa-wave-square"></i>
         </div>
-        <p style="text-align: center; font-size: 13px; color: var(--text-muted); max-width: 80%;">
-          Fluid organic shapes dance across the canvas, conveying a sense of harmony.
-        </p>
-        <div style="display: flex; align-items: center; gap: 40px; margin-bottom: 10px;">
+        <p id="voice-transcript" data-i18n="voice.placeholder">Your words will appear here.</p>
+        <div class="voice-controls">
           <i class="fa-solid fa-pen"></i>
-          <button class="mic-btn-large" onclick="switchScreen(4)"><i class="fa-solid fa-microphone"></i></button>
+          <button class="mic-btn-large" id="mic-btn" onclick="toggleListening()"><i class="fa-solid fa-microphone"></i></button>
           <i class="fa-regular fa-bookmark"></i>
         </div>
       </div>
@@ -363,22 +535,93 @@
 
     <!-- Screen 4: Apps Grid -->
     <div class="screen" id="screen-4">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2>Apps</h2>
+      <div class="apps-header">
+        <h2 data-i18n="apps.title">Apps</h2>
         <div>
-          <i class="fa-solid fa-magnifying-glass" style="margin-right: 15px;"></i>
-          <i class="fa-solid fa-gear"></i>
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <i class="fa-solid fa-gear" onclick="switchScreen(5)"></i>
         </div>
       </div>
       <div class="app-grid">
         <div class="app-item"><div class="app-icon" style="color: #1DB954;"><i class="fa-brands fa-spotify"></i></div><span>Spotify</span></div>
-        <div class="app-item"><div class="app-icon" style="color: #4285F4;"><i class="fa-regular fa-calendar-days"></i></div><span>Agenda</span></div>
-        <div class="app-item"><div class="app-icon" style="color: #FFBA08;"><i class="fa-regular fa-folder-open"></i></div><span>Gestor</span></div>
-        <div class="app-item"><div class="app-icon" style="color: #EA4335;"><i class="fa-regular fa-envelope"></i></div><span>E-mail</span></div>
-        <div class="app-item"><div class="app-icon" style="color: #F72585;"><i class="fa-regular fa-note-sticky"></i></div><span>Notas</span></div>
-        <div class="app-item"><div class="app-icon" style="color: #4CC9F0;"><i class="fa-solid fa-cloud-sun"></i></div><span>Clima</span></div>
-        <div class="app-item"><div class="app-icon" style="color: #7209B7;"><i class="fa-solid fa-chart-simple"></i></div><span>Relatórios</span></div>
-        <div class="app-item"><div class="app-icon" style="color: #8E9AAF;"><i class="fa-solid fa-gear"></i></div><span>Config.</span></div>
+        <div class="app-item"><div class="app-icon" style="color: #4285F4;"><i class="fa-regular fa-calendar-days"></i></div><span data-i18n="app.agenda">Agenda</span></div>
+        <div class="app-item"><div class="app-icon" style="color: #FFBA08;"><i class="fa-regular fa-folder-open"></i></div><span data-i18n="app.files">Files</span></div>
+        <div class="app-item"><div class="app-icon" style="color: #EA4335;"><i class="fa-regular fa-envelope"></i></div><span data-i18n="app.email">Email</span></div>
+        <div class="app-item"><div class="app-icon" style="color: #F72585;"><i class="fa-regular fa-note-sticky"></i></div><span data-i18n="app.notes">Notes</span></div>
+        <div class="app-item"><div class="app-icon" style="color: #4CC9F0;"><i class="fa-solid fa-cloud-sun"></i></div><span data-i18n="app.weather">Weather</span></div>
+        <div class="app-item"><div class="app-icon" style="color: #7209B7;"><i class="fa-solid fa-chart-simple"></i></div><span data-i18n="app.reports">Reports</span></div>
+        <div class="app-item" onclick="switchScreen(5)"><div class="app-icon" style="color: #8E9AAF;"><i class="fa-solid fa-gear"></i></div><span data-i18n="app.settings">Settings</span></div>
+      </div>
+    </div>
+
+    <!-- Screen 5: Settings -->
+    <div class="screen" id="screen-5">
+      <div class="settings-header">
+        <i class="fa-solid fa-chevron-left" onclick="switchScreen(4)"></i>
+        <h2 data-i18n="settings.title">Settings</h2>
+      </div>
+      <div class="settings-list">
+
+        <div class="settings-row">
+          <div class="settings-row-label">
+            <strong data-i18n="settings.showStats">Show CPU / FPS</strong>
+            <small data-i18n="settings.showStatsHint">Display performance stats on the home screen</small>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="toggle-stats" onchange="onToggleStats(this.checked)">
+            <span class="slider-toggle"></span>
+          </label>
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-row-label">
+            <strong data-i18n="settings.language">Language</strong>
+            <small data-i18n="settings.languageHint">Interface language</small>
+          </div>
+          <select class="settings-select" id="select-language" onchange="onChangeLanguage(this.value)">
+            <option value="pt">Português</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-row-label">
+            <strong data-i18n="settings.voice">Voice type</strong>
+            <small data-i18n="settings.voiceHint">Voice used for spoken replies</small>
+          </div>
+          <select class="settings-select" id="select-voice" onchange="onChangeVoice(this.value)">
+            <option value="female" data-i18n="settings.voiceFemale">Female</option>
+            <option value="male" data-i18n="settings.voiceMale">Male</option>
+          </select>
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-row-label">
+            <strong data-i18n="settings.wifi">Wi-Fi</strong>
+            <small id="wifi-status" data-i18n="settings.wifiHint">Not connected (preview only)</small>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="toggle-wifi" onchange="onToggleWifi(this.checked)">
+            <span class="slider-toggle"></span>
+          </label>
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-row-label">
+            <strong data-i18n="settings.brightness">Brightness</strong>
+            <small data-i18n="settings.brightnessHint">Screen brightness</small>
+          </div>
+          <input type="range" min="20" max="100" id="range-brightness" oninput="onChangeBrightness(this.value)">
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-row-label">
+            <strong data-i18n="settings.reset">Reset settings</strong>
+            <small data-i18n="settings.resetHint">Restore all defaults</small>
+          </div>
+          <button class="btn-start" style="padding:6px 12px;" onclick="resetSettings()"><span data-i18n="settings.resetBtn">Reset</span></button>
+        </div>
+
       </div>
     </div>
 
@@ -388,18 +631,311 @@
       <button class="nav-btn" onclick="switchScreen(2)">2</button>
       <button class="nav-btn" onclick="switchScreen(3)">3</button>
       <button class="nav-btn" onclick="switchScreen(4)">4</button>
+      <button class="nav-btn" onclick="switchScreen(5)">5</button>
     </div>
 
   </div>
 
   <script>
+    /* ---------------------------------------------------------
+       i18n
+    --------------------------------------------------------- */
+    const translations = {
+      pt: {
+        'tab.profile': 'Perfil', 'tab.analytics': 'Análises', 'tab.shop': 'Loja',
+        'home.title': 'Conhece o<br><span>DC Assistant!</span>',
+        'home.start': 'Começar',
+        'chat.withEcho': 'Conversar com a DC', 'chat.talkEcho': 'Falar com a DC',
+        'chat.history': 'Histórico', 'chat.viewAll': 'Ver tudo',
+        'chat.emptyHistory': 'Ainda sem conversas.',
+        'chat.topics': 'Tópicos',
+        'topic.finance': 'Finanças', 'topic.health': 'Saúde', 'topic.develop': 'Programação', 'topic.business': 'Negócios',
+        'voice.title': 'Avaliação de Voz',
+        'voice.idle': 'Toca no microfone para falar',
+        'voice.listening': 'Podes falar, estou a ouvir...',
+        'voice.processing': 'A processar...',
+        'voice.placeholder': 'As tuas palavras vão aparecer aqui.',
+        'voice.unsupported': 'O reconhecimento de voz não é suportado neste navegador.',
+        'voice.denied': 'Permissão de microfone negada.',
+        'apps.title': 'Aplicações',
+        'app.agenda': 'Agenda', 'app.files': 'Ficheiros', 'app.email': 'E-mail', 'app.notes': 'Notas',
+        'app.weather': 'Clima', 'app.reports': 'Relatórios', 'app.settings': 'Definições',
+        'settings.title': 'Definições',
+        'settings.showStats': 'Mostrar CPU / FPS',
+        'settings.showStatsHint': 'Mostrar estatísticas de desempenho no ecrã inicial',
+        'settings.language': 'Idioma', 'settings.languageHint': 'Idioma da interface',
+        'settings.voice': 'Tipo de voz', 'settings.voiceHint': 'Voz usada nas respostas faladas',
+        'settings.voiceFemale': 'Feminina', 'settings.voiceMale': 'Masculina',
+        'settings.wifi': 'Wi-Fi', 'settings.wifiHint': 'Não ligado (apenas pré-visualização)',
+        'settings.wifiOn': 'Ligado', 'settings.wifiOff': 'Não ligado (apenas pré-visualização)',
+        'settings.brightness': 'Brilho', 'settings.brightnessHint': 'Brilho do ecrã',
+        'settings.reset': 'Repor definições', 'settings.resetHint': 'Restaurar valores predefinidos',
+        'settings.resetBtn': 'Repor',
+      },
+      en: {
+        'tab.profile': 'Profile', 'tab.analytics': 'Analytics', 'tab.shop': 'Shop',
+        'home.title': 'Meet the<br><span>DC Assistant!</span>',
+        'home.start': 'Get Started',
+        'chat.withEcho': 'Chat with DC', 'chat.talkEcho': 'Talk with DC',
+        'chat.history': 'History', 'chat.viewAll': 'View All',
+        'chat.emptyHistory': 'No conversations yet.',
+        'chat.topics': 'Topics',
+        'topic.finance': 'Finance', 'topic.health': 'Health', 'topic.develop': 'Develop', 'topic.business': 'Business',
+        'voice.title': 'Voice Assessment',
+        'voice.idle': 'Tap the mic to talk',
+        'voice.listening': "Go ahead, I'm listening...",
+        'voice.processing': 'Processing...',
+        'voice.placeholder': 'Your words will appear here.',
+        'voice.unsupported': 'Speech recognition is not supported in this browser.',
+        'voice.denied': 'Microphone permission denied.',
+        'apps.title': 'Apps',
+        'app.agenda': 'Calendar', 'app.files': 'Files', 'app.email': 'Email', 'app.notes': 'Notes',
+        'app.weather': 'Weather', 'app.reports': 'Reports', 'app.settings': 'Settings',
+        'settings.title': 'Settings',
+        'settings.showStats': 'Show CPU / FPS',
+        'settings.showStatsHint': 'Display performance stats on the home screen',
+        'settings.language': 'Language', 'settings.languageHint': 'Interface language',
+        'settings.voice': 'Voice type', 'settings.voiceHint': 'Voice used for spoken replies',
+        'settings.voiceFemale': 'Female', 'settings.voiceMale': 'Male',
+        'settings.wifi': 'Wi-Fi', 'settings.wifiHint': 'Not connected (preview only)',
+        'settings.wifiOn': 'Connected', 'settings.wifiOff': 'Not connected (preview only)',
+        'settings.brightness': 'Brightness', 'settings.brightnessHint': 'Screen brightness',
+        'settings.reset': 'Reset settings', 'settings.resetHint': 'Restore all defaults',
+        'settings.resetBtn': 'Reset',
+      }
+    };
+
+    function applyI18n() {
+      const dict = translations[settings.language] || translations.pt;
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key]) el.textContent = dict[key];
+      });
+      document.querySelectorAll('[data-i18n-html]').forEach(el => {
+        const key = el.getAttribute('data-i18n-html');
+        if (dict[key]) el.innerHTML = dict[key];
+      });
+      document.getElementById('voice-status').textContent = dict['voice.idle'];
+      document.getElementById('voice-transcript').textContent = dict['voice.placeholder'];
+    }
+
+    function t(key) {
+      const dict = translations[settings.language] || translations.pt;
+      return dict[key] || key;
+    }
+
+    /* ---------------------------------------------------------
+       Settings (persisted in localStorage)
+    --------------------------------------------------------- */
+    const SETTINGS_KEY = 'dc_assistant_settings';
+    const defaultSettings = { showStats: true, language: 'pt', voiceGender: 'female', wifiOn: false, brightness: 80 };
+    let settings = { ...defaultSettings, ...(JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')) };
+
+    function saveSettings() {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    }
+
+    function syncSettingsUI() {
+      document.getElementById('toggle-stats').checked = settings.showStats;
+      document.getElementById('select-language').value = settings.language;
+      document.getElementById('select-voice').value = settings.voiceGender;
+      document.getElementById('toggle-wifi').checked = settings.wifiOn;
+      document.getElementById('range-brightness').value = settings.brightness;
+      document.getElementById('sys-stats').classList.toggle('hidden', !settings.showStats);
+      document.body.style.filter = `brightness(${settings.brightness}%)`;
+    }
+
+    function onToggleStats(checked) {
+      settings.showStats = checked;
+      saveSettings();
+      document.getElementById('sys-stats').classList.toggle('hidden', !checked);
+    }
+
+    function onChangeLanguage(lang) {
+      settings.language = lang;
+      saveSettings();
+      applyI18n();
+    }
+
+    function onChangeVoice(gender) {
+      settings.voiceGender = gender;
+      saveSettings();
+    }
+
+    function onToggleWifi(checked) {
+      settings.wifiOn = checked;
+      saveSettings();
+      document.getElementById('wifi-status').textContent = checked ? t('settings.wifiOn') : t('settings.wifiOff');
+    }
+
+    function onChangeBrightness(val) {
+      settings.brightness = Number(val);
+      saveSettings();
+      document.body.style.filter = `brightness(${settings.brightness}%)`;
+    }
+
+    function resetSettings() {
+      settings = { ...defaultSettings };
+      saveSettings();
+      syncSettingsUI();
+      applyI18n();
+    }
+
+    /* ---------------------------------------------------------
+       Navigation
+    --------------------------------------------------------- */
     function switchScreen(screenNumber) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      
+
       document.getElementById(`screen-${screenNumber}`).classList.add('active');
       document.querySelectorAll('.nav-btn')[screenNumber - 1].classList.add('active');
     }
+
+    /* ---------------------------------------------------------
+       Real FPS measurement + simulated CPU load
+    --------------------------------------------------------- */
+    let framesSinceTick = 0;
+    let lastTick = performance.now();
+
+    function statsLoop(now) {
+      framesSinceTick++;
+      if (now - lastTick >= 1000) {
+        const fps = framesSinceTick;
+        framesSinceTick = 0;
+        lastTick = now;
+        // CPU load isn't accessible from the browser; approximate with a
+        // smooth pseudo-random walk so the reading still feels "alive".
+        const prevCpu = Number(document.getElementById('stat-cpu').textContent) || 40;
+        const cpu = Math.max(5, Math.min(99, Math.round(prevCpu + (Math.random() * 14 - 7))));
+        document.getElementById('stat-fps').textContent = fps;
+        document.getElementById('stat-cpu').textContent = cpu;
+      }
+      requestAnimationFrame(statsLoop);
+    }
+
+    /* ---------------------------------------------------------
+       Voice Assessment — real Web Speech API (recognition + synthesis)
+    --------------------------------------------------------- */
+    let recognition = null;
+    let isListening = false;
+    const conversationHistory = [];
+
+    function getRecognitionCtor() {
+      return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    }
+
+    function toggleListening() {
+      const Ctor = getRecognitionCtor();
+      const statusEl = document.getElementById('voice-status');
+      const transcriptEl = document.getElementById('voice-transcript');
+      const micBtn = document.getElementById('mic-btn');
+      const wave = document.getElementById('wave-container');
+
+      if (!Ctor) {
+        statusEl.textContent = t('voice.unsupported');
+        return;
+      }
+
+      if (isListening) {
+        recognition && recognition.stop();
+        return;
+      }
+
+      recognition = new Ctor();
+      recognition.lang = settings.language === 'pt' ? 'pt-PT' : 'en-US';
+      recognition.continuous = false;
+      recognition.interimResults = true;
+
+      recognition.onstart = () => {
+        isListening = true;
+        micBtn.classList.add('listening');
+        wave.classList.add('listening');
+        statusEl.textContent = t('voice.listening');
+        transcriptEl.textContent = '';
+      };
+
+      recognition.onresult = (event) => {
+        let text = '';
+        for (let i = 0; i < event.results.length; i++) {
+          text += event.results[i][0].transcript;
+        }
+        transcriptEl.textContent = text;
+      };
+
+      recognition.onerror = (event) => {
+        if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+          statusEl.textContent = t('voice.denied');
+        }
+      };
+
+      recognition.onend = () => {
+        isListening = false;
+        micBtn.classList.remove('listening');
+        wave.classList.remove('listening');
+        const finalText = transcriptEl.textContent.trim();
+        if (finalText) {
+          statusEl.textContent = t('voice.processing');
+          conversationHistory.unshift(finalText);
+          updateHistoryPreview();
+          speak(finalText);
+        } else {
+          statusEl.textContent = t('voice.idle');
+        }
+      };
+
+      recognition.start();
+    }
+
+    function updateHistoryPreview() {
+      const el = document.getElementById('last-history-item');
+      if (el && conversationHistory.length) {
+        el.textContent = conversationHistory[0];
+      }
+    }
+
+    function pickVoiceForGender(gender, lang) {
+      const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+      if (!voices.length) return null;
+      const langPrefix = lang === 'pt' ? 'pt' : 'en';
+      const sameLang = voices.filter(v => v.lang.toLowerCase().startsWith(langPrefix));
+      const pool = sameLang.length ? sameLang : voices;
+      const femaleHints = /female|mulher|maria|joana|luciana|zira|samantha|susan|karen|victoria/i;
+      const maleHints = /male|homem|daniel|diego|miguel|david|mark|fred|alex(?!a)/i;
+      const wanted = gender === 'female' ? femaleHints : maleHints;
+      const match = pool.find(v => wanted.test(v.name));
+      return match || pool[0];
+    }
+
+    function speak(text) {
+      const statusEl = document.getElementById('voice-status');
+      if (!window.speechSynthesis) {
+        statusEl.textContent = t('voice.idle');
+        return;
+      }
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = settings.language === 'pt' ? 'pt-PT' : 'en-US';
+      const voice = pickVoiceForGender(settings.voiceGender, settings.language);
+      if (voice) utterance.voice = voice;
+      utterance.onend = () => {
+        statusEl.textContent = t('voice.idle');
+      };
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // Some browsers load voices asynchronously.
+    if (window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = () => {};
+    }
+
+    /* ---------------------------------------------------------
+       Init
+    --------------------------------------------------------- */
+    document.getElementById('select-language').addEventListener('change', () => {});
+    syncSettingsUI();
+    applyI18n();
+    requestAnimationFrame(statsLoop);
   </script>
 </body>
 </html>
