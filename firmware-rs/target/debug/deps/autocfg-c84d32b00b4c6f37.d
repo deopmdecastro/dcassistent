@@ -1,0 +1,10 @@
+C:\Users\Deogracia de Castro\Documents\Estudos\DC Assistente\firmware-rs\target\debug\deps\autocfg-c84d32b00b4c6f37.d: C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\autocfg-1.5.1\src\lib.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\autocfg-1.5.1\src\error.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\autocfg-1.5.1\src\rustc.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\autocfg-1.5.1\src\version.rs
+
+C:\Users\Deogracia de Castro\Documents\Estudos\DC Assistente\firmware-rs\target\debug\deps\libautocfg-c84d32b00b4c6f37.rlib: C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\autocfg-1.5.1\src\lib.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\autocfg-1.5.1\src\error.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\autocfg-1.5.1\src\rustc.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\autocfg-1.5.1\src\version.rs
+
+C:\Users\Deogracia de Castro\Documents\Estudos\DC Assistente\firmware-rs\target\debug\deps\libautocfg-c84d32b00b4c6f37.rmeta: C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\autocfg-1.5.1\src\lib.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\autocfg-1.5.1\src\error.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\autocfg-1.5.1\src\rustc.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\autocfg-1.5.1\src\version.rs
+
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\autocfg-1.5.1\src\lib.rs:
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\autocfg-1.5.1\src\error.rs:
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\autocfg-1.5.1\src\rustc.rs:
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\autocfg-1.5.1\src\version.rs:

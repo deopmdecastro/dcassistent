@@ -1,0 +1,9 @@
+C:\Users\Deogracia de Castro\Documents\Estudos\DC Assistente\firmware-rs\target\xtensa-esp32s3-espidf\debug\deps\rustc_demangle-f5abeea7fc502bc5.d: C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rustc-demangle-0.1.27\src\lib.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rustc-demangle-0.1.27\src\legacy.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rustc-demangle-0.1.27\src\v0.rs
+
+C:\Users\Deogracia de Castro\Documents\Estudos\DC Assistente\firmware-rs\target\xtensa-esp32s3-espidf\debug\deps\librustc_demangle-f5abeea7fc502bc5.rlib: C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rustc-demangle-0.1.27\src\lib.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rustc-demangle-0.1.27\src\legacy.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rustc-demangle-0.1.27\src\v0.rs
+
+C:\Users\Deogracia de Castro\Documents\Estudos\DC Assistente\firmware-rs\target\xtensa-esp32s3-espidf\debug\deps\librustc_demangle-f5abeea7fc502bc5.rmeta: C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rustc-demangle-0.1.27\src\lib.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rustc-demangle-0.1.27\src\legacy.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rustc-demangle-0.1.27\src\v0.rs
+
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rustc-demangle-0.1.27\src\lib.rs:
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rustc-demangle-0.1.27\src\legacy.rs:
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rustc-demangle-0.1.27\src\v0.rs:

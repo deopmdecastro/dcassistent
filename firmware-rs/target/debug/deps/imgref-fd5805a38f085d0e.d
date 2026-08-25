@@ -1,0 +1,10 @@
+C:\Users\Deogracia de Castro\Documents\Estudos\DC Assistente\firmware-rs\target\debug\deps\imgref-fd5805a38f085d0e.d: C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\imgref-1.12.2\src\lib.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\imgref-1.12.2\src\traits.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\imgref-1.12.2\src\iter.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\imgref-1.12.2\src\ops.rs
+
+C:\Users\Deogracia de Castro\Documents\Estudos\DC Assistente\firmware-rs\target\debug\deps\libimgref-fd5805a38f085d0e.rlib: C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\imgref-1.12.2\src\lib.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\imgref-1.12.2\src\traits.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\imgref-1.12.2\src\iter.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\imgref-1.12.2\src\ops.rs
+
+C:\Users\Deogracia de Castro\Documents\Estudos\DC Assistente\firmware-rs\target\debug\deps\libimgref-fd5805a38f085d0e.rmeta: C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\imgref-1.12.2\src\lib.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\imgref-1.12.2\src\traits.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\imgref-1.12.2\src\iter.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\imgref-1.12.2\src\ops.rs
+
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\imgref-1.12.2\src\lib.rs:
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\imgref-1.12.2\src\traits.rs:
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\imgref-1.12.2\src\iter.rs:
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\imgref-1.12.2\src\ops.rs:

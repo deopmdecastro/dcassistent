@@ -1,0 +1,8 @@
+C:\Users\Deogracia de Castro\Documents\Estudos\DC Assistente\firmware-rs\target\debug\deps\enumset_derive-2c1eea9e94010f4a.d: C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\enumset_derive-0.15.0\src\lib.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\enumset_derive-0.15.0\src\const_eval.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\enumset_derive-0.15.0\src\gen.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\enumset_derive-0.15.0\src\plan.rs
+
+C:\Users\Deogracia de Castro\Documents\Estudos\DC Assistente\firmware-rs\target\debug\deps\enumset_derive-2c1eea9e94010f4a.dll: C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\enumset_derive-0.15.0\src\lib.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\enumset_derive-0.15.0\src\const_eval.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\enumset_derive-0.15.0\src\gen.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\enumset_derive-0.15.0\src\plan.rs
+
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\enumset_derive-0.15.0\src\lib.rs:
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\enumset_derive-0.15.0\src\const_eval.rs:
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\enumset_derive-0.15.0\src\gen.rs:
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\enumset_derive-0.15.0\src\plan.rs:

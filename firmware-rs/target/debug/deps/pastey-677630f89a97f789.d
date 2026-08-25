@@ -1,0 +1,9 @@
+C:\Users\Deogracia de Castro\Documents\Estudos\DC Assistente\firmware-rs\target\debug\deps\pastey-677630f89a97f789.d: C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pastey-0.1.1\src\lib.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pastey-0.1.1\src\attr.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pastey-0.1.1\src\error.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pastey-0.1.1\src\segment.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pastey-0.1.1\src\../README.md
+
+C:\Users\Deogracia de Castro\Documents\Estudos\DC Assistente\firmware-rs\target\debug\deps\pastey-677630f89a97f789.dll: C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pastey-0.1.1\src\lib.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pastey-0.1.1\src\attr.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pastey-0.1.1\src\error.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pastey-0.1.1\src\segment.rs C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pastey-0.1.1\src\../README.md
+
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pastey-0.1.1\src\lib.rs:
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pastey-0.1.1\src\attr.rs:
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pastey-0.1.1\src\error.rs:
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pastey-0.1.1\src\segment.rs:
+C:\Users\Deogracia\ de\ Castro\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pastey-0.1.1\src\../README.md:

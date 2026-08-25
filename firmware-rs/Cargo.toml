@@ -64,5 +64,5 @@ slint = { version = "1.8", default-features = false, features = [
 anyhow = "1"
 
 [build-dependencies]
-embuild = "0.32"
+embuild = { version = "0.32", features = ["espidf"] }
 slint-build = "1.8"
