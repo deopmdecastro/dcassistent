@@ -21,10 +21,8 @@
 //! 3. Em cada iteração do loop: lê o touch, converte para evento de
 //!    ponteiro Slint, corre `slint::platform::update_timers_and_animations()`,
 //!    desenha se necessário.
-//! 4. Liga os callbacks do `MainWindow` (open-app / go-home / toggle-*) à
-//!    lógica Rust de cada app — por agora só "Controlo" tem estado real
-//!    (ligar/desligar, modo); as restantes ainda mostram o placeholder
-//!    definido em `ui/main.slint`.
+//! 4. Liga os callbacks do `MainWindow` (open-app / go-home / toggle-* /
+//!    pin-press / wallpaper-select / etc.) à lógica Rust de cada app.
 
 use dc_firmware_rs::{display, pins, touch_ft6336g::Ft6336g};
 use display_interface_spi::SPIInterface;
@@ -77,7 +75,7 @@ fn main() -> anyhow::Result<()> {
         PinDriver::output(unsafe { esp_idf_hal::gpio::AnyOutputPin::new(pins::LCD_PIN_BL) })?;
     backlight.set_high()?;
 
-    // --- LCD (mesmos parâmetros da fase 0.1 — ver notas de color_order/rotação no README) ---
+    // --- LCD ---
     let spi_driver = SpiDriver::new(
         peripherals.spi2,
         peripherals.pins.gpio12,
@@ -110,7 +108,7 @@ fn main() -> anyhow::Result<()> {
     )?;
     let mut touch = Ft6336g::new(i2c, pins::TOUCH_I2C_ADDR);
 
-    // --- Plataforma Slint (renderer por software, sem GPU) ---
+    // --- Plataforma Slint ---
     let window = MinimalSoftwareWindow::new(RepaintBufferType::ReusedBuffer);
     slint::platform::set_platform(Box::new(EspPlatform {
         window: window.clone(),
@@ -123,16 +121,13 @@ fn main() -> anyhow::Result<()> {
     let ui = MainWindow::new()?;
     wire_callbacks(&ui);
 
-    // Buffer de linha reutilizado a cada frame (320 px * Rgb565).
     let mut line_buffer = vec![Rgb565::BLACK; 320];
-
     let mut last_touch_down = false;
 
     info!("A entrar no loop principal da UI...");
     loop {
         slint::platform::update_timers_and_animations();
 
-        // --- Input: um único ponto de toque, sem gestos (fase inicial) ---
         match touch.read() {
             Ok(Some(point)) => {
                 let pos = slint::LogicalPosition::new(point.x as f32, point.y as f32);
@@ -159,7 +154,6 @@ fn main() -> anyhow::Result<()> {
             Err(e) => warn!("erro a ler touch: {e:?}"),
         }
 
-        // --- Render: só desenha as linhas que mudaram (software_renderer trata disso) ---
         window.draw_if_needed(|renderer| {
             renderer.render_by_line(DisplayLineBuffer {
                 display: &mut lcd,
@@ -167,14 +161,10 @@ fn main() -> anyhow::Result<()> {
             });
         });
 
-        FreeRtos::delay_ms(16); // ~60Hz de polling; ajustar depois de medir no hardware real
+        FreeRtos::delay_ms(16);
     }
 }
 
-/// Adaptador que recebe linhas do `software_renderer` do Slint e escreve-as
-/// no LCD via `embedded-graphics` (`fill_contiguous`). Mantido pequeno de
-/// propósito — otimizações de partial-refresh ficam para depois de medir
-/// o desempenho real em hardware.
 struct DisplayLineBuffer<'a, D> {
     display: &'a mut D,
     line_buffer: &'a mut [Rgb565],
@@ -204,28 +194,31 @@ where
     }
 }
 
-/// Liga os callbacks do `MainWindow` (definidos em ui/main.slint) à lógica
-/// Rust de cada app. Nesta fase só "Controlo" tem estado real — as
-/// restantes apps do registo mostram o placeholder "por implementar" até
-/// terem o seu handler aqui (e o respetivo .slint em ui/apps/).
+/// Estado de PIN gerido pelo Rust — buffer temporário, PIN guardado e
+/// modo atual (unlock / setup / setup-confirm).
+struct PinState {
+    buffer: String,
+    saved_pin: String,
+    mode: String,  // "unlock" | "setup" | "setup-confirm"
+    setup_first: String,
+}
+
+/// Liga os callbacks do `MainWindow` à lógica Rust de cada app.
 fn wire_callbacks(ui: &MainWindow) {
+    // --- app-opened: log + inicialização por app ---
     let ui_weak = ui.as_weak();
     ui.on_app_opened(move |id| {
         info!("App aberta: {id}");
-        // TODO (fase seguinte): pedir estado inicial ao dc-gateway consoante
-        // o id (ex.: GET /api/controlo/state) e popular as propriedades da
-        // app correspondente antes dela ficar visível.
         let _ = &ui_weak;
     });
 
+    // --- Controlo ---
     let ui_weak = ui.as_weak();
     ui.on_controlo_toggle_power(move || {
         if let Some(ui) = ui_weak.upgrade() {
             let new_state = !ui.get_controlo_system_on();
             ui.set_controlo_system_on(new_state);
             info!("Controlo: system_on -> {new_state}");
-            // TODO: enviar comando ao dc-gateway (REST/WS) — ver
-            // docs/firmware-architecture.md secção 8 para o cliente de rede.
         }
     });
 
@@ -237,4 +230,265 @@ fn wire_callbacks(ui: &MainWindow) {
             info!("Controlo: auto_mode -> {new_state}");
         }
     });
+
+    // --- Assistant ---
+    let ui_weak = ui.as_weak();
+    ui.on_assistant_set_tab(move |t| {
+        if let Some(ui) = ui_weak.upgrade() {
+            ui.set_assistant_tab(t as i32);
+        }
+    });
+
+    let ui_weak = ui.as_weak();
+    ui.on_assistant_send(move |msg| {
+        info!("Assistant: mensagem recebida: {msg}");
+        if let Some(ui) = ui_weak.upgrade() {
+            // TODO: contactar dc-gateway se gateway ligado; por agora mock
+            let reply = mock_reply(&msg);
+            // Adicionar mensagem do utilizador + resposta do bot
+            let mut msgs = ui.get_assistant_messages().clone();
+            msgs.push(ChatMessage { role: "user".into(), text: msg.to_string() });
+            msgs.push(ChatMessage { role: "bot".into(), text: reply });
+            ui.set_assistant_messages(msgs);
+        }
+    });
+
+    let ui_weak = ui.as_weak();
+    ui.on_assistant_quick(move |cmd| {
+        info!("Assistant: comando rápido: {cmd}");
+        if let Some(ui) = ui_weak.upgrade() {
+            let reply = mock_reply(&cmd);
+            let mut msgs = ui.get_assistant_messages().clone();
+            msgs.push(ChatMessage { role: "user".into(), text: cmd.to_string() });
+            msgs.push(ChatMessage { role: "bot".into(), text: reply });
+            ui.set_assistant_messages(msgs);
+        }
+    });
+
+    // --- Alarmes ---
+    let ui_weak = ui.as_weak();
+    ui.on_alarmes_set_tab(move |t| {
+        if let Some(ui) = ui_weak.upgrade() {
+            ui.set_alarmes_tab(t as i32);
+        }
+    });
+
+    let ui_weak = ui.as_weak();
+    ui.on_alarmes_acknowledge(move |i| {
+        info!("Alarmes: reconhecer alarme #{i}");
+        if let Some(ui) = ui_weak.upgrade() {
+            let mut alarms = ui.get_alarms().clone();
+            if (i as usize) < alarms.len() {
+                alarms[i as usize].ativo = false;
+                ui.set_alarms(alarms);
+            }
+        }
+    });
+
+    let _ = ui.as_weak();
+    ui.on_alarmes_silence(move |i| {
+        info!("Alarmes: silenciar alarme #{i}");
+    });
+
+    // --- Agenda ---
+    let _ = ui.as_weak();
+    ui.on_agenda_add_event(move |text| {
+        info!("Agenda: novo evento: {text}");
+        // TODO: adicionar à lista de eventos (precisa de propriedade in-out)
+    });
+
+    // --- Música ---
+    let ui_weak = ui.as_weak();
+    ui.on_musica_toggle_play(move || {
+        if let Some(ui) = ui_weak.upgrade() {
+            let new_state = !ui.get_musica_playing();
+            ui.set_musica_playing(new_state);
+            info!("Música: playing -> {new_state}");
+        }
+    });
+
+    let ui_weak = ui.as_weak();
+    ui.on_musica_next_track(move || {
+        if let Some(ui) = ui_weak.upgrade() {
+            let tracks = [
+                ("Blinding Lights", "The Weeknd"),
+                ("Starboy", "The Weeknd"),
+                ("Levitating", "Dua Lipa"),
+            ];
+            let current = ui.get_musica_track_title().to_string();
+            let idx = tracks.iter().position(|(t, _)| *t == current).unwrap_or(0);
+            let next = (idx + 1) % tracks.len();
+            ui.set_musica_track_title(tracks[next].0.into());
+            ui.set_musica_track_artist(tracks[next].1.into());
+            info!("Música: próxima faixa -> {}", tracks[next].0);
+        }
+    });
+
+    let ui_weak = ui.as_weak();
+    ui.on_musica_prev_track(move || {
+        if let Some(ui) = ui_weak.upgrade() {
+            let tracks = [
+                ("Blinding Lights", "The Weeknd"),
+                ("Starboy", "The Weeknd"),
+                ("Levitating", "Dua Lipa"),
+            ];
+            let current = ui.get_musica_track_title().to_string();
+            let idx = tracks.iter().position(|(t, _)| *t == current).unwrap_or(0);
+            let prev = if idx == 0 { tracks.len() - 1 } else { idx - 1 };
+            ui.set_musica_track_title(tracks[prev].0.into());
+            ui.set_musica_track_artist(tracks[prev].1.into());
+            info!("Música: faixa anterior -> {}", tracks[prev].0);
+        }
+    });
+
+    let ui_weak = ui.as_weak();
+    ui.on_musica_set_tab(move |t| {
+        if let Some(ui) = ui_weak.upgrade() {
+            ui.set_musica_tab(t as i32);
+        }
+    });
+
+    // --- Loja ---
+    let ui_weak = ui.as_weak();
+    ui.on_loja_set_tab(move |t| {
+        if let Some(ui) = ui_weak.upgrade() {
+            ui.set_loja_tab(t as i32);
+        }
+    });
+
+    let ui_weak = ui.as_weak();
+    ui.on_loja_toggle_install(move |id| {
+        info!("Loja: toggle install para app {id}");
+        if let Some(ui) = ui_weak.upgrade() {
+            let mut catalog = ui.get_loja_catalog().clone();
+            for app in &mut catalog {
+                if app.id == id.to_string() {
+                    app.installed = !app.installed;
+                    info!("Loja: {} -> {}", app.name, if app.installed { "instalada" } else { "removida" });
+                }
+            }
+            ui.set_loja_catalog(catalog);
+        }
+    });
+
+    // --- Lock screen / PIN ---
+    let ui_weak = ui.as_weak();
+    let pin_state = Rc::new(RefCell::new(PinState {
+        buffer: String::new(),
+        saved_pin: String::new(),
+        mode: "unlock".into(),
+        setup_first: String::new(),
+    }));
+    let pin_state_clone = pin_state.clone();
+    ui.on_pin_press(move |k| {
+        let Some(ui) = ui_weak.upgrade() else { return };
+        let mut ps = pin_state_clone.borrow_mut();
+
+        match k.to_string().as_str() {
+            "cancel" => {
+                ps.buffer.clear();
+                ps.setup_first.clear();
+                ui.set_lock_visible(false);
+            }
+            "back" => {
+                ps.buffer.pop();
+                ui.set_lock_pin_length(ps.buffer.len() as i32);
+            }
+            d => {
+                if ps.buffer.len() < 4 {
+                    ps.buffer.push_str(d);
+                    ui.set_lock_pin_length(ps.buffer.len() as i32);
+                    if ps.buffer.len() == 4 {
+                        handle_pin_complete(&ui, &mut *ps);
+                    }
+                }
+            }
+        }
+    });
+
+    // --- Wallpaper picker ---
+    let ui_weak = ui.as_weak();
+    ui.on_wallpaper_select(move |id| {
+        if let Some(ui) = ui_weak.upgrade() {
+            ui.set_wallpaper_current(id.to_string());
+            info!("Wallpaper: {id}");
+            ui.set_wallpaper_visible(false);
+        }
+    });
+
+    let ui_weak = ui.as_weak();
+    ui.on_wallpaper_close(move || {
+        if let Some(ui) = ui_weak.upgrade() {
+            ui.set_wallpaper_visible(false);
+        }
+    });
+}
+
+fn handle_pin_complete(ui: &MainWindow, ps: &mut PinState) {
+    match ps.mode.as_str() {
+        "setup" => {
+            ps.setup_first = ps.buffer.clone();
+            ps.buffer.clear();
+            ps.mode = "setup-confirm".into();
+            ui.set_lock_pin_length(0);
+            ui.set_lock_title("Confirma o PIN".into());
+            ui.set_lock_hint("Repete os 4 dígitos".into());
+        }
+        "setup-confirm" => {
+            if ps.buffer == ps.setup_first {
+                ps.saved_pin = ps.buffer.clone();
+                ps.buffer.clear();
+                ps.mode = "unlock".into();
+                ui.set_lock_pin_length(0);
+                ui.set_lock_visible(false);
+                info!("PIN definido com sucesso");
+            } else {
+                ps.buffer.clear();
+                ps.setup_first.clear();
+                ps.mode = "setup".into();
+                ui.set_lock_pin_length(0);
+                ui.set_lock_shake(true);
+                ui.set_lock_title("PINs não coincidem".into());
+                ui.set_lock_hint("Tenta de novo".into());
+                info!("PINs não coincidem — reintentar");
+            }
+        }
+        _ => {
+            // unlock
+            if ps.buffer == ps.saved_pin || ps.saved_pin.is_empty() {
+                ps.buffer.clear();
+                ui.set_lock_pin_length(0);
+                ui.set_lock_visible(false);
+                info!("PIN correto — desbloqueado");
+            } else {
+                ps.buffer.clear();
+                ui.set_lock_pin_length(0);
+                ui.set_lock_shake(true);
+                info!("PIN incorreto");
+            }
+        }
+    }
+}
+
+fn mock_reply(text: &str) -> String {
+    let t = text.to_lowercase();
+    if t.contains("estado") {
+        return "Tudo operacional. Rede ligada, temperatura 23.4 °C, humidade 61%, 1 alarme ativo.".into();
+    }
+    if t.contains("alarme") {
+        return "1 alarme ativo (prioridade alta): temperatura elevada no controlo (28.1 °C).".into();
+    }
+    if t.contains("evento") || t.contains("agenda") {
+        return "Hoje: 3 eventos — 09:00 Reunião, 11:30 Verificação, 15:00 Manutenção.".into();
+    }
+    if t.contains("sugest") {
+        return "Sugiro baixar o setpoint do controlo em 1 °C e verificar a ventilação.".into();
+    }
+    if t.contains("música") || t.contains("musica") {
+        return "A tocar \"Blinding Lights\" de The Weeknd.".into();
+    }
+    if t.contains("olá") || t.contains("ola") || t.contains("bom dia") {
+        return "Olá! Sou a DC. Posso dar-te o estado do sistema, alarmes, agenda ou sugestões.".into();
+    }
+    format!("Recebido: \"{text}\". (Resposta simulada — ativa o Gateway nas Definições do assistente para respostas reais.)")
 }

@@ -1,0 +1,246 @@
+// App "DC Assistant" — chat, comandos rápidos, estado do sistema e
+// definições próprias (nome, voz, personalidade, gateway). As definições
+// globais do sistema ficam em Definições; as específicas do assistente
+// ficam aqui (docs/interface-os.md 5.1/6).
+
+import { Theme } from "../theme.slint";
+import { AppShell } from "../app-shell.slint";
+
+struct ChatMessage {
+    role: string,  // "user" | "bot"
+    text: string,
+}
+
+export component AssistantApp inherits AppShell {
+    title: "DC Assistant";
+    accent: #3ea6ff;
+
+    in property <[ChatMessage]> messages: [
+        { role: "bot", text: "Olá! Sou a DC. Em que posso ajudar?" }
+    ];
+    in property <string> input-text: "";
+    in property <int> active-tab: 0;  // 0=Conversa 1=Estado 2=Definições
+    in property <string> assistant-name: "DC";
+    in property <string> gateway-status: "desligado";
+
+    callback send-message(string);
+    callback quick-command(string);
+    callback set-tab(int);
+
+    VerticalLayout {
+        padding: Theme.gap-md;
+        spacing: Theme.gap-sm;
+
+        // Tabs
+        HorizontalLayout {
+            spacing: Theme.gap-sm;
+            height: 26px;
+
+            for tab[i] in ["Conversa", "Estado", "Definições"]: tab-touch := TouchArea {
+                width: 70px;
+                clicked => { root.set-tab(i); }
+
+                Rectangle {
+                    border-radius: Theme.radius-sm;
+                    background: root.active-tab == i ? Theme.accent-soft : transparent;
+                    border-width: root.active-tab == i ? 1px : 0px;
+                    border-color: Theme.accent;
+
+                    Text {
+                        text: tab;
+                        color: root.active-tab == i ? Theme.accent : Theme.text-secondary;
+                        font-size: Theme.font-xs;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+            Rectangle { }
+        }
+
+        // --- Tab: Conversa ---
+        if active-tab == 0: Rectangle {
+            background: Theme.bg-surface;
+            border-radius: Theme.radius-md;
+
+            VerticalLayout {
+                padding: Theme.gap-md;
+                spacing: Theme.gap-sm;
+
+                // Chat log (scrollable area)
+                Rectangle {
+                    background: transparent;
+
+                    VerticalLayout {
+                        spacing: Theme.gap-sm;
+                        for msg in messages: Rectangle {
+                            height: 28px;
+                            background: msg.role == "user" ? Theme.accent-soft : Theme.bg-tile;
+                            border-radius: Theme.radius-md;
+                            border-width: 1px;
+                            border-color: msg.role == "user" ? #3ea6ff4d : Theme.bg-tile-pressed;
+
+                            Text {
+                                text: msg.text;
+                                color: Theme.text-primary;
+                                font-size: Theme.font-xs;
+                                wrap: word-wrap;
+                                horizontal-alignment: msg.role == "user" ? right : left;
+                            }
+                        }
+                    }
+                }
+
+                // Quick commands
+                HorizontalLayout {
+                    spacing: Theme.gap-sm;
+                    height: 24px;
+
+                    for cmd in ["Estado", "Alarmes", "Eventos", "Sugestões"]: cmd-touch := TouchArea {
+                        width: 56px;
+                        clicked => { root.quick-command(cmd); }
+                        Rectangle {
+                            background: cmd-touch.pressed ? Theme.bg-tile-pressed : Theme.bg-tile;
+                            border-radius: Theme.radius-sm;
+                            Text {
+                                text: cmd;
+                                color: Theme.text-secondary;
+                                font-size: 9px;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                }
+
+                // Input
+                HorizontalLayout {
+                    spacing: Theme.gap-sm;
+                    height: 32px;
+
+                    Rectangle {
+                        background: Theme.bg-tile;
+                        border-radius: Theme.radius-sm;
+                        Text {
+                            text: "Escreve...";
+                            color: Theme.text-disabled;
+                            font-size: Theme.font-xs;
+                            vertical-alignment: center;
+                        }
+                    }
+
+                    send-touch := TouchArea {
+                        width: 40px;
+                        clicked => { root.send-message(root.input-text); }
+                        Rectangle {
+                            background: Theme.accent;
+                            border-radius: Theme.radius-sm;
+                            Text {
+                                text: "➤";
+                                color: #ffffff;
+                                font-size: 14px;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- Tab: Estado ---
+        if active-tab == 1: VerticalLayout {
+            spacing: Theme.gap-sm;
+
+            Rectangle {
+                background: Theme.bg-surface;
+                border-radius: Theme.radius-md;
+                height: 120px;
+
+                VerticalLayout {
+                    padding: Theme.gap-md;
+                    spacing: Theme.gap-sm;
+
+                    Text {
+                        text: "Estado do sistema";
+                        color: Theme.text-primary;
+                        font-size: Theme.font-sm;
+                        font-weight: 700;
+                    }
+                    Text {
+                        text: "Dispositivo: " + root.assistant-name;
+                        color: Theme.text-secondary;
+                        font-size: Theme.font-xs;
+                    }
+                    Text {
+                        text: "Rede: Ligada";
+                        color: Theme.success;
+                        font-size: Theme.font-xs;
+                    }
+                    Text {
+                        text: "Temperatura: 23.4 °C";
+                        color: Theme.text-secondary;
+                        font-size: Theme.font-xs;
+                    }
+                    Text {
+                        text: "Humidade: 61%";
+                        color: Theme.text-secondary;
+                        font-size: Theme.font-xs;
+                    }
+                    Text {
+                        text: "Alarmes ativos: 1";
+                        color: Theme.danger;
+                        font-size: Theme.font-xs;
+                    }
+                }
+            }
+        }
+
+        // --- Tab: Definições ---
+        if active-tab == 2: VerticalLayout {
+            spacing: Theme.gap-sm;
+
+            Rectangle {
+                background: Theme.bg-surface;
+                border-radius: Theme.radius-md;
+
+                VerticalLayout {
+                    padding: Theme.gap-md;
+                    spacing: Theme.gap-sm;
+
+                    Text {
+                        text: "Definições do DC Assistant";
+                        color: Theme.text-primary;
+                        font-size: Theme.font-sm;
+                        font-weight: 700;
+                    }
+                    Text {
+                        text: "Nome: " + root.assistant-name;
+                        color: Theme.text-secondary;
+                        font-size: Theme.font-xs;
+                    }
+                    Text {
+                        text: "Voz: Feminina";
+                        color: Theme.text-secondary;
+                        font-size: Theme.font-xs;
+                    }
+                    Text {
+                        text: "Personalidade: Amigável";
+                        color: Theme.text-secondary;
+                        font-size: Theme.font-xs;
+                    }
+                    Text {
+                        text: "Gateway: " + root.gateway-status;
+                        color: root.gateway-status == "ligado" ? Theme.success : Theme.text-secondary;
+                        font-size: Theme.font-xs;
+                    }
+                    Text {
+                        text: "Modelo: Mock (local)";
+                        color: Theme.text-secondary;
+                        font-size: Theme.font-xs;
+                    }
+                }
+            }
+        }
+    }
+}

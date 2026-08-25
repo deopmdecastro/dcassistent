@@ -1,0 +1,156 @@
+// App "Loja" — App Store do dispositivo. Lista apps disponíveis por
+// categoria, permite instalar/remover. Apps instaladas aparecem no
+// launcher. Definições da loja (URL do manifest) ficam aqui.
+
+import { Theme } from "../theme.slint";
+import { AppShell } from "../app-shell.slint";
+
+struct StoreApp {
+    id: string,
+    name: string,
+    icon: string,
+    cat: string,
+    desc: string,
+    installed: bool,
+}
+
+export component LojaApp inherits AppShell {
+    title: "Loja";
+    accent: #14b8a6;
+
+    in property <[StoreApp]> catalog: [
+        { id: "clima", name: "Clima", icon: "🌤️", cat: "Utilitários", desc: "Meteorologia local", installed: false },
+        { id: "notas", name: "Notas", icon: "📝", cat: "Produtividade", desc: "Notas rápidas", installed: false },
+        { id: "chamadas", name: "Chamadas", icon: "📞", cat: "Comunicação", desc: "Contactos e chamadas", installed: false },
+        { id: "ficheiros", name: "Ficheiros", icon: "📁", cat: "Utilitários", desc: "Gestão de ficheiros", installed: false },
+        { id: "email", name: "E-mail", icon: "✉️", cat: "Produtividade", desc: "Correio eletrónico", installed: false },
+        { id: "seguranca", name: "Segurança", icon: "🛡️", cat: "Segurança", desc: "Câmaras e sensores", installed: false },
+        { id: "rega", name: "Rega", icon: "💧", cat: "Automação", desc: "Controlo de rega", installed: false },
+        { id: "relatorios", name: "Relatórios", icon: "📊", cat: "Monitorização", desc: "Relatórios do sistema", installed: false },
+    ];
+    in property <int> active-tab: 0;  // 0=Catalogo 1=Definições
+
+    callback toggle-install(string);
+    callback set-tab(int);
+
+    VerticalLayout {
+        padding: Theme.gap-md;
+        spacing: Theme.gap-sm;
+
+        // Tabs
+        HorizontalLayout {
+            spacing: Theme.gap-sm;
+            height: 26px;
+
+            for tab[i] in ["Catálogo", "Definições"]: tab-touch := TouchArea {
+                width: 70px;
+                clicked => { root.set-tab(i); }
+                Rectangle {
+                    border-radius: Theme.radius-sm;
+                    background: root.active-tab == i ? Theme.accent-soft : transparent;
+                    border-width: root.active-tab == i ? 1px : 0px;
+                    border-color: Theme.accent;
+                    Text {
+                        text: tab;
+                        color: root.active-tab == i ? Theme.accent : Theme.text-secondary;
+                        font-size: Theme.font-xs;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+            Rectangle { }
+        }
+
+        // --- Tab: Catálogo ---
+        if active-tab == 0: Rectangle {
+            background: Theme.bg-surface;
+            border-radius: Theme.radius-md;
+
+            VerticalLayout {
+                padding: Theme.gap-sm;
+                spacing: Theme.gap-sm;
+
+                for app in catalog: Rectangle {
+                    height: 40px;
+                    background: Theme.bg-tile;
+                    border-radius: Theme.radius-sm;
+
+                    HorizontalLayout {
+                        padding: Theme.gap-sm;
+                        spacing: Theme.gap-sm;
+
+                        Text {
+                            text: app.icon;
+                            font-size: 18px;
+                            vertical-alignment: center;
+                        }
+
+                        VerticalLayout {
+                            spacing: 0px;
+                            Text {
+                                text: app.name;
+                                color: Theme.text-primary;
+                                font-size: Theme.font-xs;
+                                font-weight: 600;
+                                overflow: elide;
+                            }
+                            Text {
+                                text: app.cat + " · " + app.desc;
+                                color: Theme.text-secondary;
+                                font-size: 9px;
+                                overflow: elide;
+                            }
+                        }
+
+                        Rectangle { }
+
+                        install-touch := TouchArea {
+                            width: 52px;
+                            clicked => { root.toggle-install(app.id); }
+                            Rectangle {
+                                background: app.installed ? Theme.bg-tile-pressed : Theme.accent;
+                                border-radius: Theme.radius-sm;
+                                Text {
+                                    text: app.installed ? "Remover" : "Instalar";
+                                    color: app.installed ? Theme.text-secondary : #ffffff;
+                                    font-size: 9px;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- Tab: Definições ---
+        if active-tab == 1: Rectangle {
+            background: Theme.bg-surface;
+            border-radius: Theme.radius-md;
+
+            VerticalLayout {
+                padding: Theme.gap-md;
+                spacing: Theme.gap-sm;
+
+                Text {
+                    text: "Definições da loja";
+                    color: Theme.text-primary;
+                    font-size: Theme.font-sm;
+                    font-weight: 700;
+                }
+                Text {
+                    text: "Fonte: Catálogo local";
+                    color: Theme.text-secondary;
+                    font-size: Theme.font-xs;
+                }
+                Text {
+                    text: "Apps disponíveis: 8";
+                    color: Theme.text-secondary;
+                    font-size: Theme.font-xs;
+                }
+            }
+        }
+    }
+}

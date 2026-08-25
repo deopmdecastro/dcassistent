@@ -1,8 +1,7 @@
-// Janela raiz da DC. Composição: Launcher (Home) <-> uma app de cada vez.
-// Navegação por `current-app` (string; "" = Home) em vez de índice de
-// tela numerada — coerente com docs/interface-os.md secção 2.
+// Janela raiz da DC. Composição: Splash → Lock (opcional) → Launcher (Home)
+// ↔ uma app de cada vez. Navegação por `current-app` (string; "" = Home).
 //
-// O Rust (src/bin/dc_os.rs) só conhece este ficheiro: define `current-app`
+// O Rust (src/bin/dc_os.rs) conhece este ficheiro: define `current-app`
 // ao ouvir `open-app`, e volta a "" ao ouvir `go-home`. A lógica de cada
 // app (dados, comandos ao Gateway) fica nos handlers Rust correspondentes,
 // nunca dentro do .slint.
@@ -12,6 +11,13 @@ import { Launcher } from "launcher.slint";
 import { ControloApp } from "apps/controlo.slint";
 import { MonitorizacaoApp } from "apps/monitorizacao.slint";
 import { DefinicoesApp } from "apps/definicoes.slint";
+import { AssistantApp } from "apps/assistant.slint";
+import { AlarmesApp } from "apps/alarmes.slint";
+import { AgendaApp } from "apps/agenda.slint";
+import { MusicaApp } from "apps/musica.slint";
+import { LojaApp } from "apps/loja.slint";
+import { LockScreen } from "lock-screen.slint";
+import { WallpaperPicker } from "wallpaper-picker.slint";
 
 export component MainWindow inherits Window {
     width: 320px;
@@ -19,7 +25,6 @@ export component MainWindow inherits Window {
     background: Theme.bg-root;
 
     // "" = Home. Caso contrário, id da app do App Registry
-    // (ui/app-registry.slint) — ex. "controlo", "monitorizacao".
     in-out property <string> current-app: "";
 
     // --- Estado partilhado (status bar) ---
@@ -27,14 +32,63 @@ export component MainWindow inherits Window {
     in property <bool> wifi-connected: false;
     in property <int> battery-percent: 100;
 
-    // --- Estado específico de apps já implementadas nesta fase ---
+    // --- Lock screen ---
+    in-out property <bool> lock-visible: false;
+    in property <string> lock-title: "Introduz o PIN";
+    in property <string> lock-hint: "Ecrã bloqueado";
+    in property <int> lock-pin-length: 0;
+    in property <bool> lock-shake: false;
+    in property <bool> lock-show-cancel: false;
+    callback pin-press(string);
+
+    // --- Wallpaper picker ---
+    in-out property <bool> wallpaper-visible: false;
+    in property <string> wallpaper-current: "aurora";
+    callback wallpaper-select(string);
+    callback wallpaper-close();
+
+    // --- Estado específico de apps ---
     in property <bool> controlo-system-on: false;
     in property <bool> controlo-auto-mode: true;
     callback controlo-toggle-power();
     callback controlo-toggle-mode();
 
-    callback app-opened(string); // notifica o Rust para carregar dados da app
+    // --- Assistant ---
+    in property <int> assistant-tab: 0;
+    in property <string> assistant-name: "DC";
+    in property <string> assistant-gateway-status: "desligado";
+    callback assistant-send(string);
+    callback assistant-quick(string);
+    callback assistant-set-tab(int);
 
+    // --- Alarmes ---
+    in property <int> alarmes-tab: 0;
+    callback alarmes-set-tab(int);
+    callback alarmes-acknowledge(int);
+    callback alarmes-silence(int);
+
+    // --- Agenda ---
+    callback agenda-add-event(string);
+
+    // --- Música ---
+    in property <bool> musica-playing: false;
+    in property <string> musica-track-title: "Blinding Lights";
+    in property <string> musica-track-artist: "The Weeknd";
+    in property <int> musica-volume: 60;
+    in property <int> musica-tab: 0;
+    callback musica-toggle-play();
+    callback musica-next-track();
+    callback musica-prev-track();
+    callback musica-set-tab(int);
+
+    // --- Loja ---
+    in property <int> loja-tab: 0;
+    callback loja-toggle-install(string);
+    callback loja-set-tab(int);
+
+    callback app-opened(string);
+
+    // --- Home / Launcher ---
     if current-app == "": Launcher {
         time-text: root.time-text;
         wifi-connected: root.wifi-connected;
@@ -43,6 +97,17 @@ export component MainWindow inherits Window {
             root.current-app = id;
             root.app-opened(id);
         }
+    }
+
+    // --- Apps ---
+    if current-app == "assistant": AssistantApp {
+        active-tab: root.assistant-tab;
+        assistant-name: root.assistant-name;
+        gateway-status: root.assistant-gateway-status;
+        go-home => { root.current-app = ""; }
+        send-message(msg) => { root.assistant-send(msg); }
+        quick-command(cmd) => { root.assistant-quick(cmd); }
+        set-tab(t) => { root.assistant-set-tab(t); }
     }
 
     if current-app == "controlo": ControloApp {
@@ -57,33 +122,56 @@ export component MainWindow inherits Window {
         go-home => { root.current-app = ""; }
     }
 
+    if current-app == "alarmes": AlarmesApp {
+        active-tab: root.alarmes-tab;
+        go-home => { root.current-app = ""; }
+        set-tab(t) => { root.alarmes-set-tab(t); }
+        acknowledge(i) => { root.alarmes-acknowledge(i); }
+        silence(i) => { root.alarmes-silence(i); }
+    }
+
+    if current-app == "agenda": AgendaApp {
+        go-home => { root.current-app = ""; }
+        add-event(text) => { root.agenda-add-event(text); }
+    }
+
+    if current-app == "musica": MusicaApp {
+        playing: root.musica-playing;
+        track-title: root.musica-track-title;
+        track-artist: root.musica-track-artist;
+        volume: root.musica-volume;
+        active-tab: root.musica-tab;
+        go-home => { root.current-app = ""; }
+        toggle-play => { root.musica-toggle-play(); }
+        next-track => { root.musica-next-track(); }
+        prev-track => { root.musica-prev-track(); }
+        set-tab(t) => { root.musica-set-tab(t); }
+    }
+
+    if current-app == "loja": LojaApp {
+        active-tab: root.loja-tab;
+        go-home => { root.current-app = ""; }
+        toggle-install(id) => { root.loja-toggle-install(id); }
+        set-tab(t) => { root.loja-set-tab(t); }
+    }
+
     if current-app == "definicoes": DefinicoesApp {
         go-home => { root.current-app = ""; }
     }
 
-    // As restantes apps do registo (assistant, alarmes, agenda, musica,
-    // loja) ainda não têm ecrã próprio — placeholder simples até serem
-    // implementadas, para o launcher nunca abrir para um ecrã em branco.
-    if current-app != "" && current-app != "controlo" && current-app != "monitorizacao" && current-app != "definicoes": Rectangle {
-        background: Theme.bg-root;
-        VerticalLayout {
-            alignment: center;
-            spacing: Theme.gap-md;
-            Text {
-                text: "\"" + current-app + "\" — por implementar";
-                color: Theme.text-secondary;
-                horizontal-alignment: center;
-            }
-            back-touch := TouchArea {
-                height: 32px;
-                clicked => { root.current-app = ""; }
-                Text {
-                    text: "‹ Voltar";
-                    color: Theme.accent;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
-                }
-            }
-        }
+    // --- Overlays ---
+    if lock-visible: LockScreen {
+        title: root.lock-title;
+        hint: root.lock-hint;
+        pin-length: root.lock-pin-length;
+        shake: root.lock-shake;
+        show-cancel: root.lock-show-cancel;
+        pin-press(k) => { root.pin-press(k); }
+    }
+
+    if wallpaper-visible: WallpaperPicker {
+        current-id: root.wallpaper-current;
+        select(id) => { root.wallpaper-select(id); }
+        close => { root.wallpaper-close(); }
     }
 }

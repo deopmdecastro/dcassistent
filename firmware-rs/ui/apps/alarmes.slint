@@ -1,0 +1,140 @@
+// App "Alarmes" — central de alarmes com separadores Ativos/Histórico.
+// Cada alarme tem prioridade (alta/média/baixa), título, hora e estado.
+
+import { Theme } from "../theme.slint";
+import { AppShell } from "../app-shell.slint";
+
+struct AlarmEntry {
+    titulo: string,
+    hora: string,
+    prio: string,    // "alta" | "media" | "baixa"
+    ativo: bool,
+}
+
+export component AlarmesApp inherits AppShell {
+    title: "Alarmes";
+    accent: #ef4444;
+
+    in property <int> active-tab: 0;  // 0=Ativos 1=Histórico
+    in property <[AlarmEntry]> alarms: [
+        { titulo: "Temp. elevada no controlo", hora: "14:31", prio: "alta", ativo: true },
+        { titulo: "Humidade fora do intervalo", hora: "13:05", prio: "media", ativo: false },
+        { titulo: "Manutenção programada", hora: "09:00", prio: "baixa", ativo: false },
+    ];
+
+    callback set-tab(int);
+    callback acknowledge(int);
+    callback silence(int);
+
+    function prio-color(p: string) -> color {
+        p == "alta" ? Theme.danger : p == "media" ? Theme.warning : Theme.text-secondary
+    }
+
+    VerticalLayout {
+        padding: Theme.gap-md;
+        spacing: Theme.gap-sm;
+
+        // Tabs
+        HorizontalLayout {
+            spacing: Theme.gap-sm;
+            height: 26px;
+
+            for tab[i] in ["Ativos", "Histórico"]: tab-touch := TouchArea {
+                width: 70px;
+                clicked => { root.set-tab(i); }
+                Rectangle {
+                    border-radius: Theme.radius-sm;
+                    background: root.active-tab == i ? Theme.accent-soft : transparent;
+                    border-width: root.active-tab == i ? 1px : 0px;
+                    border-color: Theme.accent;
+                    Text {
+                        text: tab;
+                        color: root.active-tab == i ? Theme.accent : Theme.text-secondary;
+                        font-size: Theme.font-xs;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+            Rectangle { }
+        }
+
+        // Alarm list — shows all alarms; each row adapts to tab/estado
+        Rectangle {
+            background: Theme.bg-surface;
+            border-radius: Theme.radius-md;
+
+            VerticalLayout {
+                padding: Theme.gap-md;
+                spacing: Theme.gap-sm;
+
+                for alarm[i] in alarms: Rectangle {
+                    height: 44px;
+                    background: transparent;
+
+                    HorizontalLayout {
+                        spacing: Theme.gap-sm;
+
+                        // Priority dot
+                        Rectangle {
+                            width: 8px;
+                            height: 8px;
+                            border-radius: 4px;
+                            background: prio-color(alarm.prio);
+                        }
+
+                        // Title + time
+                        VerticalLayout {
+                            spacing: 0px;
+                            Text {
+                                text: alarm.titulo;
+                                color: Theme.text-primary;
+                                font-size: Theme.font-xs;
+                                font-weight: 600;
+                                overflow: elide;
+                            }
+                            Text {
+                                text: alarm.hora + " · prioridade " + alarm.prio;
+                                color: Theme.text-secondary;
+                                font-size: 9px;
+                            }
+                        }
+
+                        Rectangle { }
+
+                        // Action buttons (only for active alarms in Ativos tab)
+                        if alarm.ativo && active-tab == 0: HorizontalLayout {
+                            spacing: Theme.gap-sm;
+                            ack-touch := TouchArea {
+                                width: 44px;
+                                clicked => { root.acknowledge(i); }
+                                Rectangle {
+                                    background: Theme.success;
+                                    border-radius: Theme.radius-sm;
+                                    Text { text: "OK"; color: #0a0a0a; font-size: 9px; horizontal-alignment: center; vertical-alignment: center; }
+                                }
+                            }
+                            sil-touch := TouchArea {
+                                width: 44px;
+                                clicked => { root.silence(i); }
+                                Rectangle {
+                                    background: Theme.bg-tile;
+                                    border-radius: Theme.radius-sm;
+                                    Text { text: "Sil."; color: Theme.text-secondary; font-size: 9px; horizontal-alignment: center; vertical-alignment: center; }
+                                }
+                            }
+                        }
+
+                        // "Reconhecido" label for inactive alarms
+                        if !alarm.ativo: Text {
+                            text: "reconhecido";
+                            color: Theme.text-disabled;
+                            font-size: 9px;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

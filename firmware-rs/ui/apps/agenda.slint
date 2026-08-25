@@ -1,0 +1,136 @@
+// App "Agenda" — tarefas e eventos de hoje e próximos. Permite adicionar
+// novos eventos. Definições próprias da agenda ficam aqui dentro.
+
+import { Theme } from "../theme.slint";
+import { AppShell } from "../app-shell.slint";
+
+struct AgendaEvent {
+    time: string,
+    title: string,
+}
+
+export component AgendaApp inherits AppShell {
+    title: "Agenda";
+    accent: #a78bfa;
+
+    in property <[AgendaEvent]> today-events: [
+        { time: "09:00", title: "Reunião de equipa" },
+        { time: "11:30", title: "Verificação de rotina" },
+        { time: "15:00", title: "Manutenção preventiva" },
+    ];
+    in property <[AgendaEvent]> upcoming-events: [
+        { time: "Amanhã", title: "Inspeção de sensores" },
+        { time: "Sábado", title: "Backup do sistema" },
+    ];
+    in property <string> new-event-text: "";
+
+    callback add-event(string);
+
+    VerticalLayout {
+        padding: Theme.gap-md;
+        spacing: Theme.gap-sm;
+
+        // Today
+        Rectangle {
+            background: Theme.bg-surface;
+            border-radius: Theme.radius-md;
+
+            VerticalLayout {
+                padding: Theme.gap-md;
+                spacing: Theme.gap-sm;
+
+                Text {
+                    text: "Hoje";
+                    color: Theme.text-primary;
+                    font-size: Theme.font-sm;
+                    font-weight: 700;
+                }
+
+                for ev in today-events: HorizontalLayout {
+                    spacing: Theme.gap-md;
+                    height: 24px;
+
+                    Text {
+                        text: ev.time;
+                        color: Theme.text-secondary;
+                        font-size: Theme.font-xs;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: ev.title;
+                        color: Theme.text-primary;
+                        font-size: Theme.font-xs;
+                        vertical-alignment: center;
+                        overflow: elide;
+                    }
+                }
+            }
+        }
+
+        // Upcoming
+        Rectangle {
+            background: Theme.bg-surface;
+            border-radius: Theme.radius-md;
+
+            VerticalLayout {
+                padding: Theme.gap-md;
+                spacing: Theme.gap-sm;
+
+                Text {
+                    text: "Próximos";
+                    color: Theme.text-primary;
+                    font-size: Theme.font-sm;
+                    font-weight: 700;
+                }
+
+                for ev in upcoming-events: HorizontalLayout {
+                    spacing: Theme.gap-md;
+                    height: 24px;
+
+                    Text {
+                        text: ev.time;
+                        color: Theme.text-secondary;
+                        font-size: Theme.font-xs;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: ev.title;
+                        color: Theme.text-primary;
+                        font-size: Theme.font-xs;
+                        vertical-alignment: center;
+                        overflow: elide;
+                    }
+                }
+            }
+        }
+
+        // New event
+        Rectangle {
+            background: Theme.bg-surface;
+            border-radius: Theme.radius-md;
+            height: 36px;
+
+            HorizontalLayout {
+                padding: Theme.gap-md;
+                spacing: Theme.gap-sm;
+
+                Text {
+                    text: "Novo evento...";
+                    color: Theme.text-disabled;
+                    font-size: Theme.font-xs;
+                    vertical-alignment: center;
+                }
+                Rectangle { }
+                add-touch := TouchArea {
+                    width: 50px;
+                    clicked => { root.add-event(root.new-event-text); }
+                    Rectangle {
+                        background: Theme.accent;
+                        border-radius: Theme.radius-sm;
+                        Text { text: "Add"; color: #ffffff; font-size: Theme.font-xs; horizontal-alignment: center; vertical-alignment: center; }
+                    }
+                }
+            }
+        }
+    }
+}

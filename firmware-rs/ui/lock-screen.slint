@@ -1,0 +1,95 @@
+// Ecrã de bloqueio com PIN — aparece no arranque se o bloqueio estiver
+// ativo (Boot → Splash → Lock → Home). Suporta 3 modos:
+//   "unlock"        — desbloquear com PIN existente
+//   "setup"         — definir novo PIN (primeira entrada)
+//   "setup-confirm" — confirmar o novo PIN (segunda entrada)
+//
+// O PIN é de 4 dígitos. O Rust gere o estado (pinBuffer, pinMode, pin
+// guardado) e decide se o desbloqueio é válido.
+
+import { Theme } from "theme.slint";
+
+export component LockScreen inherits Rectangle {
+    background: #05030caa;
+
+    in property <string> title: "Introduz o PIN";
+    in property <string> hint: "Ecrã bloqueado";
+    in property <int> pin-length: 0;       // nº de dígitos introduzidos (0-4)
+    in property <bool> shake: false;       // animação de erro
+    in property <bool> show-cancel: false;
+
+    callback pin-press(string);  // "0".."9", "back", "cancel"
+
+    VerticalLayout {
+        alignment: center;
+        spacing: 10px;
+
+        // Lock icon
+        Text {
+            text: "🔒";
+            font-size: 28px;
+            horizontal-alignment: center;
+        }
+
+        Text {
+            text: title;
+            color: Theme.text-primary;
+            font-size: Theme.font-md;
+            font-weight: 600;
+            horizontal-alignment: center;
+        }
+
+        Text {
+            text: hint;
+            color: Theme.text-secondary;
+            font-size: Theme.font-xs;
+            horizontal-alignment: center;
+        }
+
+        // PIN dots
+        HorizontalLayout {
+            alignment: center;
+            spacing: 10px;
+            height: 16px;
+
+            for i in 4: Rectangle {
+                width: 12px;
+                height: 12px;
+                border-radius: 6px;
+                background: i < root.pin-length ? Theme.accent : Theme.bg-tile;
+                border-width: 1px;
+                border-color: i < root.pin-length ? Theme.accent : Theme.bg-tile-pressed;
+            }
+        }
+
+        // PIN pad (3x4 grid: 1-9, cancel/0/back)
+        GridLayout {
+            alignment: center;
+            spacing: 6px;
+
+            for k[i] in ["1","2","3","4","5","6","7","8","9","cancel","0","back"]: key-touch := TouchArea {
+                row: i / 3;
+                col: i - (i / 3) * 3;
+                width: 44px;
+                height: 32px;
+                clicked => { root.pin-press(k); }
+
+                Rectangle {
+                    background: key-touch.pressed ? Theme.bg-tile-pressed : Theme.bg-tile;
+                    border-radius: Theme.radius-sm;
+                    border-width: 1px;
+                    border-color: k == "cancel" || k == "back" ? Theme.accent.with-alpha(0.3) : transparent;
+
+                    Text {
+                        text: k == "back" ? "⌫" : k == "cancel" ? "✕" : k;
+                        color: k == "cancel" || k == "back" ? Theme.accent : Theme.text-primary;
+                        font-size: k == "cancel" || k == "back" ? 14px : 16px;
+                        font-weight: 500;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+    }
+}

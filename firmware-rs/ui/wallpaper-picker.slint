@@ -1,0 +1,88 @@
+// Seletor de papel de parede — 6 temas (aurora, nebula, ocean, sunset,
+// forest, graphite). Aparece como overlay modal. O Rust recebe a escolha
+// e guarda-a nas definições do sistema.
+
+import { Theme } from "theme.slint";
+
+struct WallpaperPreset {
+    id: string,
+    label: string,
+    preview-color: color,
+}
+
+export component WallpaperPicker inherits Rectangle {
+    background: #05030caa;
+
+    in property <string> current-id: "aurora";
+    callback select(string);
+    callback close();
+
+    property <[WallpaperPreset]> presets: [
+        { id: "aurora",   label: "Aurora",   preview-color: #7c3aed },
+        { id: "nebula",   label: "Nébula",   preview-color: #3b0764 },
+        { id: "ocean",    label: "Oceano",   preview-color: #0e7490 },
+        { id: "sunset",   label: "Pôr do sol", preview-color: #be185d },
+        { id: "forest",   label: "Floresta", preview-color: #166534 },
+        { id: "graphite", label: "Grafite",  preview-color: #1e293b },
+    ];
+
+    VerticalLayout {
+        alignment: center;
+        spacing: 10px;
+
+        Text {
+            text: "Papel de parede";
+            color: Theme.text-primary;
+            font-size: Theme.font-md;
+            font-weight: 600;
+            horizontal-alignment: center;
+        }
+
+        // 3x2 grid of swatches
+        GridLayout {
+            alignment: center;
+            spacing: 8px;
+
+            for p[i] in presets: swatch-touch := TouchArea {
+                row: i / 3;
+                col: i - (i / 3) * 3;
+                width: 80px;
+                height: 56px;
+                clicked => { root.select(p.id); }
+
+                Rectangle {
+                    background: p.preview-color;
+                    border-radius: Theme.radius-md;
+                    border-width: root.current-id == p.id ? 2px : 1px;
+                    border-color: root.current-id == p.id ? Theme.accent : Theme.bg-tile-pressed;
+
+                    Text {
+                        text: p.label;
+                        color: #ffffff;
+                        font-size: 9px;
+                        horizontal-alignment: center;
+                        vertical-alignment: bottom;
+                        y: parent.height - self.height - 4px;
+                    }
+                }
+            }
+        }
+
+        close-touch := TouchArea {
+            width: 80px;
+            height: 28px;
+            clicked => { root.close(); }
+            Rectangle {
+                background: Theme.bg-tile;
+                border-radius: Theme.radius-sm;
+                Text {
+                    text: "Fechar";
+                    color: Theme.text-secondary;
+                    font-size: Theme.font-xs;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,184 @@
+// App "Música" — player simples (play/pause, anterior/próxima, volume).
+// Definições próprias (qualidade de streaming) ficam aqui, não em Definições.
+
+import { Theme } from "../theme.slint";
+import { AppShell } from "../app-shell.slint";
+
+export component MusicaApp inherits AppShell {
+    title: "Música";
+    accent: #1db954;
+
+    in property <bool> playing: false;
+    in property <string> track-title: "Blinding Lights";
+    in property <string> track-artist: "The Weeknd";
+    in property <int> volume: 60;
+    in property <int> active-tab: 0;  // 0=Player 1=Definições
+
+    callback toggle-play();
+    callback next-track();
+    callback prev-track();
+    callback set-tab(int);
+
+    VerticalLayout {
+        padding: Theme.gap-md;
+        spacing: Theme.gap-sm;
+
+        // Tabs
+        HorizontalLayout {
+            spacing: Theme.gap-sm;
+            height: 26px;
+
+            for tab[i] in ["Player", "Definições"]: tab-touch := TouchArea {
+                width: 70px;
+                clicked => { root.set-tab(i); }
+                Rectangle {
+                    border-radius: Theme.radius-sm;
+                    background: root.active-tab == i ? Theme.accent-soft : transparent;
+                    border-width: root.active-tab == i ? 1px : 0px;
+                    border-color: Theme.accent;
+                    Text {
+                        text: tab;
+                        color: root.active-tab == i ? Theme.accent : Theme.text-secondary;
+                        font-size: Theme.font-xs;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+            Rectangle { }
+        }
+
+        // --- Tab: Player ---
+        if active-tab == 0: VerticalLayout {
+            spacing: Theme.gap-sm;
+
+            // Album art + track info
+            Rectangle {
+                background: Theme.bg-surface;
+                border-radius: Theme.radius-md;
+                height: 90px;
+
+                VerticalLayout {
+                    alignment: center;
+                    spacing: Theme.gap-sm;
+
+                    Text {
+                        text: "🎵";
+                        font-size: 36px;
+                        horizontal-alignment: center;
+                    }
+                    Text {
+                        text: track-title;
+                        color: Theme.text-primary;
+                        font-size: Theme.font-md;
+                        font-weight: 700;
+                        horizontal-alignment: center;
+                    }
+                    Text {
+                        text: track-artist;
+                        color: Theme.text-secondary;
+                        font-size: Theme.font-xs;
+                        horizontal-alignment: center;
+                    }
+                }
+            }
+
+            // Controls
+            HorizontalLayout {
+                alignment: center;
+                spacing: 20px;
+                height: 40px;
+
+                prev-touch := TouchArea {
+                    width: 40px;
+                    clicked => { root.prev-track(); }
+                    Text {
+                        text: "⏮";
+                        font-size: 18px;
+                        color: Theme.text-secondary;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+
+                play-touch := TouchArea {
+                    width: 50px;
+                    clicked => { root.toggle-play(); }
+                    Text {
+                        text: playing ? "⏸" : "▶";
+                        font-size: 28px;
+                        color: Theme.accent;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+
+                next-touch := TouchArea {
+                    width: 40px;
+                    clicked => { root.next-track(); }
+                    Text {
+                        text: "⏭";
+                        font-size: 18px;
+                        color: Theme.text-secondary;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+
+            // Volume
+            Rectangle {
+                background: Theme.bg-surface;
+                border-radius: Theme.radius-md;
+                height: 32px;
+
+                HorizontalLayout {
+                    padding: Theme.gap-md;
+                    spacing: Theme.gap-sm;
+
+                    Text {
+                        text: "Volume";
+                        color: Theme.text-secondary;
+                        font-size: Theme.font-xs;
+                        vertical-alignment: center;
+                    }
+                    Rectangle { }
+                    Text {
+                        text: volume + "%";
+                        color: Theme.text-primary;
+                        font-size: Theme.font-xs;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+
+        // --- Tab: Definições ---
+        if active-tab == 1: Rectangle {
+            background: Theme.bg-surface;
+            border-radius: Theme.radius-md;
+
+            VerticalLayout {
+                padding: Theme.gap-md;
+                spacing: Theme.gap-sm;
+
+                Text {
+                    text: "Definições da aplicação";
+                    color: Theme.text-primary;
+                    font-size: Theme.font-sm;
+                    font-weight: 700;
+                }
+                Text {
+                    text: "Qualidade: Alta";
+                    color: Theme.text-secondary;
+                    font-size: Theme.font-xs;
+                }
+                Text {
+                    text: "Streaming: Spotify";
+                    color: Theme.text-secondary;
+                    font-size: Theme.font-xs;
+                }
+            }
+        }
+    }
+}
