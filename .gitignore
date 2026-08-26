@@ -5,6 +5,12 @@ firmware/sdkconfig.old
 firmware/managed_components/
 firmware/dependencies.lock
 
+# --- Firmware Rust (esp-idf) ---
+firmware-rs/target/
+firmware-rs/sdkconfig
+firmware-rs/sdkconfig.old
+firmware-rs/managed_components/
+
 # --- DC Gateway (Node/TypeScript) ---
 dc-gateway/node_modules/
 dc-gateway/dist/

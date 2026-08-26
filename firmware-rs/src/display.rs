@@ -19,7 +19,7 @@ use mipidsi::{models::ILI9341Rgb565, options::Rotation, Builder};
 use crate::pins;
 
 pub type LcdDisplay<'d> = mipidsi::Display<
-    SPIInterface<SpiDeviceDriver<'d, esp_idf_hal::spi::SpiDriver<'d>>, PinDriver<'d, esp_idf_hal::gpio::AnyIOPin, Output>>,
+    SPIInterface<SpiDeviceDriver<'d, esp_idf_hal::spi::SpiDriver<'d>>, PinDriver<'d, esp_idf_hal::gpio::AnyOutputPin, Output>>,
     ILI9341Rgb565,
     mipidsi::NoResetPin,
 >;

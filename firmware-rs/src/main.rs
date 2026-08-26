@@ -19,7 +19,6 @@
 use dc_firmware_rs::{display, pins, touch_ft6336g};
 
 use display_interface_spi::SPIInterface;
-use embedded_graphics::pixelcolor::Rgb565;
 use esp_idf_hal::delay::{Ets, FreeRtos};
 use esp_idf_hal::gpio::PinDriver;
 use esp_idf_hal::i2c::{I2cConfig, I2cDriver};
