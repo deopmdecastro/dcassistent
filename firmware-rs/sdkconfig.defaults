@@ -5,8 +5,14 @@ CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
 CONFIG_ESP_WIFI_STA_DISCONNECTED_PM_ENABLE=y
 
 # Build "std" em Rust precisa de um pouco mais de stack na task principal
-# do que o mínimo de C puro.
-CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+# do que o mínimo de C puro. O binário `dc-os` (UI em Slint) instancia a
+# `MainWindow` inteira (mensagens do assistente, alarmes, catálogo da
+# loja, etc.) dentro de `main()`, o que gera um frame de stack grande;
+# 8192 bytes causava "stack overflow in task main" logo após inicializar
+# o LCD e entrar no loop da UI (ecrã a piscar em branco). 32768 dá
+# margem confortável para o Slint software renderer + drivers de
+# LCD/touch sem custo relevante (ESP32-S3 tem 512KB SRAM interna).
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=32768
 
 # Necessário pelo esp-idf-sys/esp-idf-svc para builds std em Rust.
 CONFIG_ESP_TASK_WDT_TIMEOUT_S=30
